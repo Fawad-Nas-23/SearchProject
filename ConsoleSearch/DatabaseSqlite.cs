@@ -12,6 +12,8 @@ namespace ConsoleSearch;
 
         private Dictionary<string, int> mWords = null;
 
+        private bool IgnoreCase = true;
+
         public DatabaseSqlite()
         {
             var connectionStringBuilder = new SqliteConnectionStringBuilder();

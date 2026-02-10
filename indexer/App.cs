@@ -21,14 +21,27 @@ namespace Indexer;
             TimeSpan used = DateTime.Now - start;
             Console.WriteLine("DONE! used " + used.TotalMilliseconds);
 
-            var all = db.GetAllWords();
-
             Console.WriteLine($"Indexed {db.DocumentCounts} documents");
+
+            var all = db.GetAllWords();
             Console.WriteLine($"Number of different words: {all.Count}");
-            int count = 10;
-            Console.WriteLine($"The first {count} is:");
-            foreach (var p in all.Take(count)) {
-                Console.WriteLine("<" + p.Key + ", " + p.Value + ">");
+
+            // New behaviour: show total occurrences and ask how many top words to display
+            var totalOccurrences = db.GetTotalOccurrences();
+            Console.WriteLine($"Total indexed word occurrences: {totalOccurrences}");
+
+            Console.Write("How many top words do you want to see? ");
+            string input = Console.ReadLine();
+            if (!int.TryParse(input, out int count) || count <= 0)
+            {
+                count = 10;
+            }
+
+            var top = db.GetTopWords(count);
+            Console.WriteLine($"The top {count} words (most frequent first):");
+            foreach (var (word, id, freq) in top)
+            {
+                Console.WriteLine($"<{word}, {id}> - {freq}");
             }
         }
 

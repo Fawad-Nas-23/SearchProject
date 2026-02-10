@@ -18,4 +18,10 @@ namespace Indexer;
         void InsertAllWords(Dictionary<string, int> words);
 
         void InsertAllOcc(int docId, ISet<int> wordIds);
+
+        // Return the total number of indexed word occurrences (rows in Occ)
+        int GetTotalOccurrences();
+
+        // Return the top [count] words as tuples: (word, id, frequency) ordered by frequency desc
+        List<(string word, int id, int frequency)> GetTopWords(int count);
     }

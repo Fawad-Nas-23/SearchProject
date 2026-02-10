@@ -9,8 +9,7 @@ namespace Indexer;
     public class DatabaseSqlite : IDatabase
     {
         private SqliteConnection _connection;
-
-        public DatabaseSqlite()
+    public DatabaseSqlite()
         {
 
             var connectionStringBuilder = new SqliteConnectionStringBuilder();
@@ -180,6 +179,53 @@ namespace Indexer;
 
                 return -1;
             }
+        }
+
+        public int GetTotalOccurrences()
+        {
+            var selectCmd = _connection.CreateCommand();
+            selectCmd.CommandText = "SELECT COUNT(*) FROM Occ";
+
+            using (var reader = selectCmd.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    return reader.GetInt32(0);
+                }
+            }
+            return 0;
+        }
+
+        public List<(string word, int id, int frequency)> GetTopWords(int count)
+        {
+            var res = new List<(string word, int id, int frequency)>();
+
+            var command = _connection.CreateCommand();
+            command.CommandText =
+                @"SELECT w.name, w.id, COUNT(o.docId) as freq
+                  FROM word w
+                  LEFT JOIN Occ o ON w.id = o.wordId
+                  GROUP BY w.id, w.name
+                  ORDER BY freq DESC
+                  LIMIT @limit";
+
+            var pLimit = command.CreateParameter();
+            pLimit.ParameterName = "limit";
+            pLimit.Value = count;
+            command.Parameters.Add(pLimit);
+
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var name = reader.GetString(0);
+                    var id = reader.GetInt32(1);
+                    var freq = reader.GetInt32(2);
+                    res.Add((name, id, freq));
+                }
+            }
+
+            return res;
         }
     }
 

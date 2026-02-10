@@ -174,4 +174,26 @@ public class DatabasePostgres : IDatabase
                 return -1;
             }
         }
+
+        public int GetTotalOccurrences()
+        {
+            var selectCmd = _connection.CreateCommand();
+            selectCmd.CommandText = "SELECT COUNT(*) FROM occ";
+            using (var reader = selectCmd.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    return reader.GetInt32(0);
+                }
+            }
+            return 0;
+        }
+
+        public List<(string word, int id, int frequency)> GetTopWords(int count)
+        {
+
+            return new List<(string word, int id, int frequency)>();
+
+        }
+
 }
