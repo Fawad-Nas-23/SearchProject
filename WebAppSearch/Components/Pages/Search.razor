@@ -1,0 +1,105 @@
+﻿@page "/search"
+@using Shared.Model
+@using System.Text.Json
+@rendermode InteractiveServer
+@inject HttpClient Http
+
+<h3>Search</h3>
+
+<div class="search-box">
+    <input @bind="inputText"
+           @bind:event="oninput"
+           @onkeydown="HandleKeyDown"
+           placeholder="Enter search terms..."
+           class="form-control" />
+    <button class="btn btn-primary mt-2" @onclick="ExecuteSearch" disabled="@isLoading">
+        @(isLoading ? "Søger..." : "Søg")
+    </button>
+</div>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger mt-3">@errorMessage</div>
+}
+
+@if (result != null)
+{
+    <div class="mt-3">
+        @if (result.Ignored?.Count > 0)
+        {
+            <p><strong>Ignoreret:</strong> @string.Join(", ", result.Ignored)</p>
+        }
+
+        <p><strong>Resultater:</strong> @result.NoOfHits — Tid: @result.TimeUsed.TotalMilliseconds ms</p>
+
+        @{
+            int idx = 1;
+        }
+        @foreach (var doc in result.DocumentHits)
+        {
+            <div class="card mb-2">
+                <div class="card-body">
+                    <h6 class="card-title">@idx. @doc.Document.mUrl</h6>
+                    <p class="card-text mb-1">Indeholder <strong>@doc.NoOfHits</strong> søgeord</p>
+                    <p class="card-text mb-1"><small class="text-muted">Indekseret: @doc.Document.mIdxTime</small></p>
+                    <p class="card-text"><small>Mangler: @ArrayAsString(doc.Missing.ToArray())</small></p>
+                </div>
+            </div>
+            idx++;
+        }
+    </div>
+}
+
+@code {
+    private string inputText = "";
+    private bool isLoading = false;
+    private string? errorMessage = null;
+    private SearchResult? result = null;
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await ExecuteSearch();
+    }
+
+private async Task ExecuteSearch()
+{
+    if (string.IsNullOrWhiteSpace(inputText)) return;
+
+    Console.WriteLine($"[Blazor] Searching for: {inputText}");
+    isLoading = true;
+    errorMessage = null;
+    result = null;
+
+    var query = inputText.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+    var request = new SearchRequest { Query = query, MaxAmount = 10 };
+
+    try
+    {
+        Console.WriteLine($"[Blazor] Sending request to: {Http.BaseAddress}api/search");
+        var response = await Http.PostAsJsonAsync("api/search", request);
+        Console.WriteLine($"[Blazor] Response status: {response.StatusCode}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            errorMessage = $"Fejl: {response.StatusCode}";
+            return;
+        }
+
+        result = await response.Content.ReadFromJsonAsync<SearchResult>(
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        
+        Console.WriteLine($"[Blazor] Result hits: {result?.NoOfHits}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Blazor] EXCEPTION: {ex.Message}");
+        errorMessage = $"Fejl ved API-kald: {ex.Message}";
+    }
+    finally
+    {
+        isLoading = false;
+    }
+}
+    private string ArrayAsString(string[] s) =>
+        s.Length == 0 ? "[]" : $"[{string.Join(", ", s)}]";
+}

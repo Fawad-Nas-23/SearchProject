@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using Shared.Model;
+using System.Text;
 
-namespace ConsoleSearch;
+namespace Shared.Model
+{
     public class DocumentHit
     {
         /// <summary>
@@ -21,4 +22,4 @@ namespace ConsoleSearch;
         /// </summary>
         public List<string> Missing { get; set; }
     }
-
+}

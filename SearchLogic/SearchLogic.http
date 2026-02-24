@@ -1,0 +1,6 @@
+@SearchLogic_HostAddress = http://localhost:5272
+
+GET {{SearchLogic_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

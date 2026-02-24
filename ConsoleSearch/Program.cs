@@ -1,11 +1,13 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace ConsoleSearch;
-    class Program
+class Program
+{
+    static async Task Main(string[] args)
     {
-        static void Main(string[] args)
-        {
-            new App().Run();
-        }
+        var app = new App();
+        await app.Run();
     }
+}
 

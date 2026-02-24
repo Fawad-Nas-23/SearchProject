@@ -1,7 +1,6 @@
-﻿using System.Collections.Generic;
-using Shared.Model;
-
-namespace ConsoleSearch;
+﻿using Shared.Model;
+namespace SearchLogic.Repository
+{
     public interface IDatabase
     {
         /// <summary>
@@ -36,3 +35,4 @@ namespace ConsoleSearch;
         /// </summary>
         List<string> WordsFromIds(List<int> wordIds);
     }
+}

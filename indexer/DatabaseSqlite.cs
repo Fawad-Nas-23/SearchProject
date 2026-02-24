@@ -1,8 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using Shared.Model;
+﻿using Microsoft.Data.Sqlite;
 using Shared;
-using Microsoft.Data.Sqlite;
+using Shared.Model;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Indexer;
 
@@ -11,6 +12,14 @@ namespace Indexer;
         private SqliteConnection _connection;
     public DatabaseSqlite()
         {
+
+            // CREATE DIRECTORY FIRST - MUST BE BEFORE OPENING CONNECTION
+            var dbPath = Paths.SQLITE_DATABASE;
+            var directory = Path.GetDirectoryName(dbPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
 
             var connectionStringBuilder = new SqliteConnectionStringBuilder();
 
