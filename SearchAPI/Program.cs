@@ -22,8 +22,12 @@ namespace SearchLogic
                           .AllowAnyHeader();
                 });
             });
-
+            builder.Configuration.AddEnvironmentVariables();
             var app = builder.Build();
+
+            Console.WriteLine($"ENV INSTANCE = {Environment.GetEnvironmentVariable("INSTANCE")}");
+            Console.WriteLine($"CONFIG INSTANCE = {builder.Configuration["INSTANCE"]}");
+            
 
             // Configure the HTTP request pipeline.
 

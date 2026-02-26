@@ -14,7 +14,7 @@ namespace WebAppSearch
 
             builder.Services.AddScoped(sp => new HttpClient
             {
-                BaseAddress = new Uri("http://localhost:5272/")
+                BaseAddress = new Uri("http://localhost:5000/")
             });
 
             var app = builder.Build();

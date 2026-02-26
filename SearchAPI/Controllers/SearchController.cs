@@ -9,12 +9,18 @@ namespace SearchLogic.Controllers
     public class SearchController : ControllerBase
     {
         private readonly ISearchService _searchLogic;
-
-        public SearchController(ISearchService searchLogic)
+        private readonly string _instanceId;
+        public SearchController(ISearchService searchLogic, IConfiguration configuration)
         {
             _searchLogic = searchLogic;
+            _instanceId = configuration["INSTANCE"] ?? "Unknown";
         }
 
+        [HttpGet("ping")]
+        public ActionResult<string> Ping()
+        {
+            return Ok($"Search API is running. Instance: {_instanceId}");
+        }
         // POST api/search
         [HttpPost]
         public ActionResult<SearchResult> Search([FromBody] SearchRequest request)
