@@ -4,6 +4,6 @@ namespace SearchLogic.Services
 {
     public interface ISearchService
     {
-        SearchResult Search(string[] query, int maxAmount);
+        SearchResult Search(string[] query, int maxAmount, bool caseSensitive);
     }
 }

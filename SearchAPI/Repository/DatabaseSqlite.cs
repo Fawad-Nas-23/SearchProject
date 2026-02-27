@@ -82,7 +82,8 @@ public class DatabaseSqlite : IDatabase
 
     private Dictionary<string, int> GetAllWords()
     {
-        Dictionary<string, int> res = new Dictionary<string, int>();
+        var words = new Dictionary<string, int>(
+            IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
         var selectCmd = _connection.CreateCommand();
         selectCmd.CommandText = "SELECT * FROM word";
@@ -94,10 +95,10 @@ public class DatabaseSqlite : IDatabase
                 var id = reader.GetInt32(0);
                 var w = reader.GetString(1);
 
-                res.Add(w, id);
+                words.TryAdd(w, id);
             }
         }
-        return res;
+        return words;
     }
 
     public BEDocument GetDocDetails(int docId)
@@ -170,20 +171,27 @@ public class DatabaseSqlite : IDatabase
         return result;
     }
 
-    public List<int> GetWordIds(string[] query, out List<string> outIgnored)
+    public List<int> GetWordIds(string[] query, out List<string> outIgnored, bool caseSensitive)
     {
-        if (mWords == null)
+        if (mWords == null || IgnoreCase != !caseSensitive)
+        {
+            IgnoreCase = !caseSensitive;
             mWords = GetAllWords();
+        }
+
         var res = new List<int>();
         var ignored = new List<string>();
 
         foreach (var aWord in query)
         {
-            if (mWords.ContainsKey(aWord))
-                res.Add(mWords[aWord]);
+            string key = caseSensitive ? aWord : aWord.ToLowerInvariant();
+
+            if (mWords.ContainsKey(key))
+                res.Add(mWords[key]);
             else
                 ignored.Add(aWord);
         }
+
         outIgnored = ignored;
         return res;
     }

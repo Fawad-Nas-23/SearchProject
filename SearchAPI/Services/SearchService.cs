@@ -13,14 +13,14 @@ public class SearchService : ISearchService
     /* Perform search of documents containing words from query. The result will
      * contain details about amost maxAmount of documents.
      */
-    public SearchResult Search(string[] query, int maxAmount)
+    public SearchResult Search(string[] query, int maxAmount, bool caseSensitive)
     {
-        Console.WriteLine($"[Search] Query: {string.Join(", ", query)}, MaxAmount: {maxAmount}");
+        Console.WriteLine($"[Search] Query: {string.Join(", ", query)}, MaxAmount: {maxAmount}, CaseSensitive: {caseSensitive}");
 
         List<string> ignored;
         DateTime start = DateTime.Now;
 
-        var wordIds = mDatabase.GetWordIds(query, out ignored);
+        var wordIds = mDatabase.GetWordIds(query, out ignored, caseSensitive);
         Console.WriteLine($"[Search] WordIds found: {wordIds.Count}, Ignored: {string.Join(", ", ignored)}");
 
         if (wordIds.Count == 0)

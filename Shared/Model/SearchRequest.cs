@@ -17,6 +17,13 @@ namespace Shared.Model
         /// Defaults to 10.
         /// </summary>
         public int MaxAmount { get; set; } = 10;
+
+        /// <summary>
+        /// If true, search is case-sensitive. Defaults to true to keep current behavior.
+        /// Set to false to perform case-insensitive searches.
+        /// </summary>
+        public bool CaseSensitive { get; set; } = true;
+
     }
 
 }

@@ -31,7 +31,7 @@ namespace SearchLogic.Controllers
             try
             {
                 Console.WriteLine($"Starting search for: {string.Join(", ", request.Query)}");
-                var result = _searchLogic.Search(request.Query, request.MaxAmount);
+                var result = _searchLogic.Search(request.Query, request.MaxAmount, request.CaseSensitive);
                 Console.WriteLine("Search completed");
                 return Ok(result);
             }

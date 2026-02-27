@@ -7,7 +7,7 @@ namespace SearchLogic.Repository
         /// Get id's for words in [query]. [outIgnored] contains those word from query that is
         /// not present in any document.
         /// </summary>
-        List<int> GetWordIds(string[] query, out List<string> outIgnored);
+        List<int> GetWordIds(string[] query, out List<string> outIgnored, bool caseSensitive);
 
         /// <summary>
         /// Get document details by its id
