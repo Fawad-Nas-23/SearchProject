@@ -2,6 +2,7 @@
 @page "/search"
 @using Shared.Model
 @using System.Text.Json
+@using Microsoft.Extensions.Http
 @rendermode InteractiveServer
 @inject HttpClient Http
 
@@ -48,9 +49,7 @@
         font-family: 'Google Sans Text', 'Google Sans', -apple-system, sans-serif;
         min-height: 100vh;
         background: var(--bg-primary);
-        background-image:
-            radial-gradient(ellipse 80% 50% at 50% -20%, rgba(138, 180, 248, 0.06), transparent),
-            radial-gradient(ellipse 60% 40% at 80% 100%, rgba(129, 201, 149, 0.04), transparent);
+        background-image: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(138, 180, 248, 0.06), transparent), radial-gradient(ellipse 60% 40% at 80% 100%, rgba(129, 201, 149, 0.04), transparent);
         color: var(--text-primary);
         padding: 0;
         margin: 0;
@@ -60,16 +59,15 @@
         transition: var(--transition-slow);
     }
 
-    .search-page.has-results {
-        justify-content: flex-start;
-    }
+        .search-page.has-results {
+            justify-content: flex-start;
+        }
 
-    .search-page:not(.has-results) {
-        justify-content: center;
-        padding-top: 0;
-    }
+        .search-page:not(.has-results) {
+            justify-content: center;
+            padding-top: 0;
+        }
 
-    /* ── Header / Brand ── */
     .search-brand {
         text-align: center;
         margin-bottom: 32px;
@@ -108,7 +106,6 @@
         display: none;
     }
 
-    /* ── Search Container ── */
     .search-container {
         width: 100%;
         max-width: 680px;
@@ -116,7 +113,6 @@
         transition: var(--transition-slow);
     }
 
-    /* ── Search Input Area ── */
     .search-input-wrapper {
         position: relative;
         background: var(--bg-input);
@@ -126,11 +122,11 @@
         box-shadow: var(--shadow-soft);
     }
 
-    .search-input-wrapper:focus-within {
-        border-color: var(--border-active);
-        box-shadow: var(--shadow-elevated), var(--shadow-glow);
-        background: #111827;
-    }
+        .search-input-wrapper:focus-within {
+            border-color: var(--border-active);
+            box-shadow: var(--shadow-elevated), var(--shadow-glow);
+            background: #111827;
+        }
 
     .search-input-row {
         display: flex;
@@ -164,9 +160,9 @@
         caret-color: var(--accent);
     }
 
-    .search-input::placeholder {
-        color: var(--text-dim);
-    }
+        .search-input::placeholder {
+            color: var(--text-dim);
+        }
 
     .search-btn {
         flex-shrink: 0;
@@ -183,26 +179,25 @@
         transition: var(--transition-fast);
     }
 
-    .search-btn:hover:not(:disabled) {
-        background: var(--accent-hover);
-        transform: scale(1.05);
-    }
+        .search-btn:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
 
-    .search-btn:active:not(:disabled) {
-        transform: scale(0.95);
-    }
+        .search-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
 
-    .search-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
+        .search-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
 
-    .search-btn svg {
-        width: 20px;
-        height: 20px;
-    }
+        .search-btn svg {
+            width: 20px;
+            height: 20px;
+        }
 
-    /* ── Options Bar ── */
     .search-options {
         display: flex;
         align-items: center;
@@ -223,10 +218,10 @@
         border: 1px solid transparent;
     }
 
-    .toggle-group:hover {
-        background: var(--accent-dim);
-        border-color: var(--border);
-    }
+        .toggle-group:hover {
+            background: var(--accent-dim);
+            border-color: var(--border);
+        }
 
     .toggle-track {
         position: relative;
@@ -238,9 +233,9 @@
         flex-shrink: 0;
     }
 
-    .toggle-track.active {
-        background: var(--accent);
-    }
+        .toggle-track.active {
+            background: var(--accent);
+        }
 
     .toggle-thumb {
         position: absolute;
@@ -274,7 +269,6 @@
         color: var(--accent);
     }
 
-    /* ── Results Meta ── */
     .results-meta {
         max-width: 680px;
         width: 100%;
@@ -292,10 +286,10 @@
         border-bottom: 1px solid var(--border);
     }
 
-    .results-stats .stat-highlight {
-        color: var(--accent);
-        font-weight: 500;
-    }
+        .results-stats .stat-highlight {
+            color: var(--accent);
+            font-weight: 500;
+        }
 
     .ignored-bar {
         display: flex;
@@ -310,13 +304,12 @@
         color: var(--warning);
     }
 
-    .ignored-bar svg {
-        flex-shrink: 0;
-        width: 16px;
-        height: 16px;
-    }
+        .ignored-bar svg {
+            flex-shrink: 0;
+            width: 16px;
+            height: 16px;
+        }
 
-    /* ── Result Cards ── */
     .results-list {
         max-width: 680px;
         width: 100%;
@@ -337,11 +330,11 @@
         animation: cardSlideIn var(--transition-slow) both;
     }
 
-    .result-card:hover {
-        border-color: var(--border-active);
-        background: #1f2f52;
-        box-shadow: var(--shadow-soft);
-    }
+        .result-card:hover {
+            border-color: var(--border-active);
+            background: #1f2f52;
+            box-shadow: var(--shadow-soft);
+        }
 
     .result-card-header {
         display: flex;
@@ -402,11 +395,11 @@
         gap: 5px;
     }
 
-    .result-detail-item svg {
-        width: 13px;
-        height: 13px;
-        opacity: 0.6;
-    }
+        .result-detail-item svg {
+            width: 13px;
+            height: 13px;
+            opacity: 0.6;
+        }
 
     .result-missing {
         color: var(--warning);
@@ -414,7 +407,6 @@
         margin-top: 8px;
     }
 
-    /* ── Loading Spinner ── */
     .loading-container {
         display: flex;
         flex-direction: column;
@@ -436,15 +428,19 @@
         animation: dotPulse 1.4s infinite ease-in-out;
     }
 
-    .loading-dot:nth-child(2) { animation-delay: 0.2s; }
-    .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+        .loading-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
 
     .loading-text {
         font-size: 0.88rem;
         color: var(--text-secondary);
     }
 
-    /* ── Error ── */
     .error-banner {
         max-width: 680px;
         width: 100%;
@@ -464,16 +460,22 @@
         font-size: 0.88rem;
     }
 
-    .error-content svg {
-        flex-shrink: 0;
-        width: 18px;
-        height: 18px;
-    }
+        .error-content svg {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+        }
 
-    /* ── Animations ── */
     @@keyframes dotPulse {
-        0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
-        40% { transform: scale(1); opacity: 1; }
+        0%, 80%, 100% {
+            transform: scale(0.4);
+            opacity: 0.3;
+        }
+
+        40% {
+            transform: scale(1);
+            opacity: 1;
+        }
     }
 
     @@keyframes cardSlideIn {
@@ -481,13 +483,13 @@
             opacity: 0;
             transform: translateY(12px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
 
-    /* ── Empty State ── */
     .empty-hint {
         text-align: center;
         margin-top: 48px;
@@ -495,16 +497,16 @@
         font-size: 0.88rem;
     }
 
-    .empty-hint kbd {
-        display: inline-block;
-        padding: 2px 8px;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        font-family: inherit;
-        font-size: 0.82rem;
-        color: var(--text-secondary);
-    }
+        .empty-hint kbd {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
 </style>
 
 <div class="search-page @(result != null ? "has-results" : "")">
@@ -555,6 +557,12 @@
                 </div>
                 <span class="toggle-label">Case-sensitive</span>
             </div>
+            <div class="toggle-group" @onclick="ToggleLoadBalance">
+                <div class="toggle-track @(loadBalance ? "active" : "")">
+                    <div class="toggle-thumb"></div>
+                </div>
+                <span class="toggle-label">Load balancer</span>
+            </div>
         </div>
     </div>
 
@@ -603,6 +611,8 @@
                 <span>@result.TimeUsed.TotalMilliseconds.ToString("F1") ms</span>
                 <span>·</span>
                 <span>@(caseSensitive ? "Case-sensitive" : "Case-insensitive")</span>
+                <span>·</span>
+                <span>@(loadBalance ? "Load balanced" : "Direct")</span>
             </div>
 
             @if (result.Ignored?.Count > 0)
@@ -672,6 +682,7 @@
     private string inputText = "";
     private bool isLoading = false;
     private bool caseSensitive = false;
+    private bool loadBalance = true;
     private string? errorMessage = null;
     private SearchResult? result = null;
     private string? lastQuery = null;
@@ -685,7 +696,16 @@
     {
         caseSensitive = !caseSensitive;
 
-        // Re-run search if we already have results
+        if (result != null && !string.IsNullOrWhiteSpace(lastQuery))
+        {
+            await ExecuteSearch();
+        }
+    }
+
+    private async Task ToggleLoadBalance()
+    {
+        loadBalance = !loadBalance;
+
         if (result != null && !string.IsNullOrWhiteSpace(lastQuery))
         {
             await ExecuteSearch();
@@ -711,7 +731,10 @@
 
         try
         {
-            var response = await Http.PostAsJsonAsync("/loadbalance/search", request);
+            var url = loadBalance
+                ? "http://localhost:5144/loadbalance/search"
+                : "http://localhost:5272/api/search";
+            var response = await Http.PostAsJsonAsync(url, request);
 
             if (!response.IsSuccessStatusCode)
             {
