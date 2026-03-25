@@ -204,6 +204,7 @@
         gap: 16px;
         margin-top: 14px;
         padding: 0 8px;
+        flex-wrap: wrap;
     }
 
     .toggle-group {
@@ -563,6 +564,12 @@
                 </div>
                 <span class="toggle-label">Load balancer</span>
             </div>
+            <div class="toggle-group" @onclick="ToggleCoordinator">
+                <div class="toggle-track @(useCoordinator ? "active" : "")">
+                    <div class="toggle-thumb"></div>
+                </div>
+                <span class="toggle-label">Coordinator</span>
+            </div>
         </div>
     </div>
 
@@ -612,7 +619,7 @@
                 <span>·</span>
                 <span>@(caseSensitive ? "Case-sensitive" : "Case-insensitive")</span>
                 <span>·</span>
-                <span>@(loadBalance ? "Load balanced" : "Direct")</span>
+                <span>@(useCoordinator ? "Coordinator" : loadBalance ? "Load balanced" : "Direct")</span>
             </div>
 
             @if (result.Ignored?.Count > 0)
@@ -683,6 +690,7 @@
     private bool isLoading = false;
     private bool caseSensitive = false;
     private bool loadBalance = true;
+    private bool useCoordinator = false;
     private string? errorMessage = null;
     private SearchResult? result = null;
     private string? lastQuery = null;
@@ -712,6 +720,16 @@
         }
     }
 
+    private async Task ToggleCoordinator()
+    {
+        useCoordinator = !useCoordinator;
+
+        if (result != null && !string.IsNullOrWhiteSpace(lastQuery))
+        {
+            await ExecuteSearch();
+        }
+    }
+
     private async Task ExecuteSearch()
     {
         if (string.IsNullOrWhiteSpace(inputText)) return;
@@ -725,15 +743,20 @@
         var request = new SearchRequest
         {
             Query = query,
-            MaxAmount = 10,
+            MaxAmount = 20,
             CaseSensitive = caseSensitive
         };
 
         try
         {
-            var url = loadBalance
-                ? "http://localhost:5144/loadbalance/search"
-                : "http://localhost:5272/api/search";
+            string url;
+            if (useCoordinator)
+                url = "http://localhost:5141/api/coordinator/search";
+            else if (loadBalance)
+                url = "http://localhost:5144/loadbalance/search";
+            else
+                url = "http://localhost:5272/api/search";
+
             var response = await Http.PostAsJsonAsync(url, request);
 
             if (!response.IsSuccessStatusCode)

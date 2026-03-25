@@ -5,26 +5,35 @@ using Shared.Model;
 using Microsoft.Data.Sqlite;
 
 namespace SearchLogic.Repository;
+
 public class DatabaseSqlite : IDatabase
 {
     private SqliteConnection _connection;
-
     private Dictionary<string, int> mWords = null;
-
     private bool IgnoreCase = true;
+    private readonly ILogger<DatabaseSqlite> _logger;
 
-    public DatabaseSqlite()
+    public DatabaseSqlite(IConfiguration configuration, ILogger<DatabaseSqlite> logger)
     {
+        _logger = logger;
+
         var connectionStringBuilder = new SqliteConnectionStringBuilder();
+        var dbPath = configuration["SQLITE_DB"] ?? Paths.SQLITE_DATABASE_1;
+        connectionStringBuilder.DataSource = dbPath;
 
-        connectionStringBuilder.DataSource = Paths.SQLITE_DATABASE;
+        _logger.LogInformation("Connecting to SQLite database at {DbPath}", dbPath);
 
-
-        _connection = new SqliteConnection(connectionStringBuilder.ConnectionString);
-
-        _connection.Open();
-
-
+        try
+        {
+            _connection = new SqliteConnection(connectionStringBuilder.ConnectionString);
+            _connection.Open();
+            _logger.LogInformation("SQLite connection opened successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "Failed to open SQLite database at {DbPath}", dbPath);
+            throw;
+        }
     }
 
     private void Execute(string sql)
@@ -34,41 +43,33 @@ public class DatabaseSqlite : IDatabase
         cmd.ExecuteNonQuery();
     }
 
-
-
-
-
-    // key is the id of the document, the value is number of search words in the document
     public List<(int docId, int hits)> GetDocuments(List<int> wordIds)
     {
         var res = new List<(int docId, int hits)>();
-
-        /* Example sql statement looking for doc id's that
-           contain words with id 2 and 3
-
-           SELECT docId, COUNT(wordId) as count
-             FROM Occ
-            WHERE wordId in (2,3)
-         GROUP BY docId
-         ORDER BY COUNT(wordId) DESC 
-         */
 
         var sql = "SELECT docId, COUNT(wordId) as count FROM Occ where ";
         sql += "wordId in " + AsString(wordIds) + " GROUP BY docId ";
         sql += "ORDER BY count DESC;";
 
-        var selectCmd = _connection.CreateCommand();
-        selectCmd.CommandText = sql;
-
-        using (var reader = selectCmd.ExecuteReader())
+        try
         {
-            while (reader.Read())
-            {
-                var docId = reader.GetInt32(0);
-                var count = reader.GetInt32(1);
+            var selectCmd = _connection.CreateCommand();
+            selectCmd.CommandText = sql;
 
-                res.Add((docId, count));
+            using (var reader = selectCmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var docId = reader.GetInt32(0);
+                    var count = reader.GetInt32(1);
+                    res.Add((docId, count));
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetDocuments query failed | WordIds: {WordIds}", string.Join(",", wordIds));
+            throw;
         }
 
         return res;
@@ -76,78 +77,102 @@ public class DatabaseSqlite : IDatabase
 
     private string AsString(List<int> x) => $"({string.Join(',', x)})";
 
-
-
-
-
     private Dictionary<string, int> GetAllWords()
     {
+        _logger.LogDebug("Loading all words from database | IgnoreCase: {IgnoreCase}", IgnoreCase);
+
         var words = new Dictionary<string, int>(
             IgnoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
-        var selectCmd = _connection.CreateCommand();
-        selectCmd.CommandText = "SELECT * FROM word";
-
-        using (var reader = selectCmd.ExecuteReader())
+        try
         {
-            while (reader.Read())
-            {
-                var id = reader.GetInt32(0);
-                var w = reader.GetString(1);
+            var selectCmd = _connection.CreateCommand();
+            selectCmd.CommandText = "SELECT * FROM word";
 
-                words.TryAdd(w, id);
+            using (var reader = selectCmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var id = reader.GetInt32(0);
+                    var w = reader.GetString(1);
+                    words.TryAdd(w, id);
+                }
             }
+
+            _logger.LogInformation("Word cache loaded | Count: {WordCount} | IgnoreCase: {IgnoreCase}",
+                words.Count, IgnoreCase);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load words from database");
+            throw;
+        }
+
         return words;
     }
 
     public BEDocument GetDocDetails(int docId)
     {
-        var selectCmd = _connection.CreateCommand();
-        selectCmd.CommandText = $"SELECT * FROM document where id = {docId}";
-
-        using (var reader = selectCmd.ExecuteReader())
+        try
         {
-            if (reader.Read())
-            {
-                var id = reader.GetInt32(0);
-                var url = reader.GetString(1);
-                var idxTime = reader.GetString(2);
-                var creationTime = reader.GetString(3);
+            var selectCmd = _connection.CreateCommand();
+            selectCmd.CommandText = $"SELECT * FROM document where id = {docId}";
 
-                return new BEDocument { mId = id, mUrl = url, mIdxTime = idxTime, mCreationTime = creationTime };
+            using (var reader = selectCmd.ExecuteReader())
+            {
+                if (reader.Read())
+                {
+                    var id = reader.GetInt32(0);
+                    var url = reader.GetString(1);
+                    var idxTime = reader.GetString(2);
+                    var creationTime = reader.GetString(3);
+                    return new BEDocument { mId = id, mUrl = url, mIdxTime = idxTime, mCreationTime = creationTime };
+                }
             }
+
+            _logger.LogWarning("Document not found | DocId: {DocId}", docId);
+            return null;
         }
-        return null;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetDocDetails failed | DocId: {DocId}", docId);
+            throw;
+        }
     }
 
-    /* Return a list of id's for words; all them among wordIds, but not present in the document
-     */
     public List<int> GetMissing(int docId, List<int> wordIds)
     {
         var sql = "SELECT wordId FROM Occ where ";
         sql += "wordId in " + AsString(wordIds) + " AND docId = " + docId;
         sql += " ORDER BY wordId;";
 
-        var selectCmd = _connection.CreateCommand();
-        selectCmd.CommandText = sql;
-
-        List<int> present = new List<int>();
-
-        using (var reader = selectCmd.ExecuteReader())
+        try
         {
-            while (reader.Read())
+            var selectCmd = _connection.CreateCommand();
+            selectCmd.CommandText = sql;
+
+            List<int> present = new List<int>();
+
+            using (var reader = selectCmd.ExecuteReader())
             {
-                var wordId = reader.GetInt32(0);
-                present.Add(wordId);
+                while (reader.Read())
+                {
+                    var wordId = reader.GetInt32(0);
+                    present.Add(wordId);
+                }
             }
+
+            var result = new List<int>(wordIds);
+            foreach (var w in present)
+                result.Remove(w);
+
+            return result;
         }
-        var result = new List<int>(wordIds);
-        foreach (var w in present)
-            result.Remove(w);
-
-
-        return result;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GetMissing failed | DocId: {DocId}", docId);
+            throw;
+        }
     }
 
     public List<string> WordsFromIds(List<int> wordIds)
@@ -155,20 +180,28 @@ public class DatabaseSqlite : IDatabase
         var sql = "SELECT name FROM Word where ";
         sql += "id in " + AsString(wordIds);
 
-        var selectCmd = _connection.CreateCommand();
-        selectCmd.CommandText = sql;
-
-        List<string> result = new List<string>();
-
-        using (var reader = selectCmd.ExecuteReader())
+        try
         {
-            while (reader.Read())
+            var selectCmd = _connection.CreateCommand();
+            selectCmd.CommandText = sql;
+
+            List<string> result = new List<string>();
+
+            using (var reader = selectCmd.ExecuteReader())
             {
-                var wordId = reader.GetString(0);
-                result.Add(wordId);
+                while (reader.Read())
+                {
+                    var wordId = reader.GetString(0);
+                    result.Add(wordId);
+                }
             }
+            return result;
         }
-        return result;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "WordsFromIds failed | WordIds: {WordIds}", string.Join(",", wordIds));
+            throw;
+        }
     }
 
     public List<int> GetWordIds(string[] query, out List<string> outIgnored, bool caseSensitive)
@@ -196,4 +229,3 @@ public class DatabaseSqlite : IDatabase
         return res;
     }
 }
-

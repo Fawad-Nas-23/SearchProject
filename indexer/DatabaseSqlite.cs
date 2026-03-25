@@ -14,7 +14,7 @@ namespace Indexer;
         {
 
             // CREATE DIRECTORY FIRST - MUST BE BEFORE OPENING CONNECTION
-            var dbPath = Paths.SQLITE_DATABASE;
+            var dbPath = Paths.SQLITE_DATABASE_1;
             var directory = Path.GetDirectoryName(dbPath);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
@@ -25,7 +25,7 @@ namespace Indexer;
 
             connectionStringBuilder.Mode = SqliteOpenMode.ReadWriteCreate;
 
-            connectionStringBuilder.DataSource = Paths.SQLITE_DATABASE;
+            connectionStringBuilder.DataSource = Paths.SQLITE_DATABASE_1;
 
 
             _connection = new SqliteConnection(connectionStringBuilder.ConnectionString);

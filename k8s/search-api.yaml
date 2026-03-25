@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-api
+spec:
+  selector:
+    matchLabels:
+      app: search-api
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: search-api
+    spec:
+      containers:
+        - name: search-api
+          image: fawad23/search-api:1.4.0
+          env:
+            - name: INSTANCE
+              value: "A"
+            - name: SQLITE_DB
+              value: "/data/SearchDB-1.db"
+          ports:
+            - containerPort: 80
+              protocol: TCP

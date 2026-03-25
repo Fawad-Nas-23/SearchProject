@@ -36,7 +36,8 @@
       "applicationUrl": "http://localhost:5273;https://localhost:7186",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "INSTANCE" : "A"
+        "INSTANCE": "A",
+        "SQLITE_DB": "SearchData\\SearchDB-1.db"
       }
     },
     "InstanceB": {
@@ -46,7 +47,8 @@
       "applicationUrl": "http://localhost:5274;https://localhost:7187",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "INSTANCE" : "B"
+        "INSTANCE": "B",
+        "SQLITE_DB": "SearchData\\SearchDB-1.db"
       }
     },
     "IIS Express": {

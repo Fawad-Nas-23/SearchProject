@@ -27,7 +27,9 @@ namespace SearchLogic
 
             Console.WriteLine($"ENV INSTANCE = {Environment.GetEnvironmentVariable("INSTANCE")}");
             Console.WriteLine($"CONFIG INSTANCE = {builder.Configuration["INSTANCE"]}");
-            
+            var configuredSqlite = builder.Configuration["SQLITE_DB"];
+            Console.WriteLine($"Configured SQLITE_DB (from env/config): {configuredSqlite ?? "<not set>"}");
+
 
             // Configure the HTTP request pipeline.
 

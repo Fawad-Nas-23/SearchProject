@@ -1,0 +1,10 @@
+services:
+  search-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5273:80"
+    environment:
+      - INSTANCE=A
+      - SQLITE_DB=/data/SearchDB-1.db
