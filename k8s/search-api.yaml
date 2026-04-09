@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: search-api
-          image: fawad23/search-api:1.4.0
+          image: fawad23/search-api:1.6.0
           env:
             - name: INSTANCE
               value: "A"
@@ -23,3 +23,42 @@ spec:
           ports:
             - containerPort: 80
               protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-api
+  labels:
+    app: search-api
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "metrics"
+spec:
+  type: NodePort
+  selector:
+    app: search-api
+  ports:
+    - name: metrics
+      port: 80
+      targetPort: 80
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: search-api-monitor
+  namespace: monitoring
+  labels:
+    app: search-api
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      app: search-api
+  endpoints:
+    - interval: 15s
+      port: metrics

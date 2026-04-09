@@ -15,6 +15,8 @@ WORKDIR /app
 COPY --from=build /app/publish ./
 COPY SearchData/SearchDB-1.db /data/SearchDB-1.db
 
+COPY SearchAPI/NLog.config ./
+
 ENV ASPNETCORE_URLS=http://+:80 \
     ASPNETCORE_ENVIRONMENT=Production \
     INSTANCE=Unknown \

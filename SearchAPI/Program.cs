@@ -1,5 +1,7 @@
 using SearchLogic.Repository;
 using SearchLogic.Services;
+using NLog.Web;
+using OpenTelemetry.Metrics;
 namespace SearchLogic
 {
     public class Program
@@ -8,8 +10,19 @@ namespace SearchLogic
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            // --- NYT: Setup NLog ---
+            builder.Logging.ClearProviders();
+            builder.Host.UseNLog();
 
+            // --- NYT: Setup Metrikker ---
+            // --- NYT: Setup Metrikker ---
+            builder.Services.AddOpenTelemetry()
+                .WithMetrics(metrics =>
+                {
+                    metrics.AddPrometheusExporter();
+                    metrics.AddMeter("Microsoft.AspNetCore.Hosting",
+                                     "Microsoft.AspNetCore.Server.Kestrel");
+                });
             builder.Services.AddControllers();
             builder.Services.AddScoped<IDatabase, DatabaseSqlite>();
             builder.Services.AddScoped<ISearchService, SearchService>();
@@ -34,7 +47,7 @@ namespace SearchLogic
             // Configure the HTTP request pipeline.
 
             //app.UseHttpsRedirection();
-
+            app.UseOpenTelemetryPrometheusScrapingEndpoint();
             app.UseAuthorization();
             app.UseCors();
 
