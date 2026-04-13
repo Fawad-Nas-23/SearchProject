@@ -1,3 +1,15 @@
+#########################################################
+# Secrets
+#########################################################
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-credentials
+type: Opaque
+data:
+  password: Wk9uVU1SWkFtSg==
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -14,12 +26,19 @@ spec:
     spec:
       containers:
         - name: search-api
-          image: fawad23/search-api:1.6.0
+          image: fawad23/search-api:1.8.0
           env:
             - name: INSTANCE
               value: "A"
             - name: SQLITE_DB
               value: "/data/SearchDB-1.db"
+            - name: RedisConnectionString
+              value: "search-redis-master.caching.svc.cluster.local:6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
           ports:
             - containerPort: 80
               protocol: TCP
