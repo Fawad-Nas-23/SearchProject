@@ -42,7 +42,8 @@ namespace SearchLogic
             });
 
             builder.Services.AddControllers();
-            builder.Services.AddScoped<IDatabase, DatabaseSqlite>();
+            builder.Services.AddScoped<IDatabase, DatabasePostgres>();
+            //builder.Services.AddScoped<IDatabase, DatabaseSqlite>();
             builder.Services.AddScoped<ISearchService, SearchService>();
             builder.Services.AddSingleton<Instrumentation>();
             builder.Services.AddCors(options =>
