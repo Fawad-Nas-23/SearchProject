@@ -1,14 +1,19 @@
-﻿using System;
+﻿using NLog;
+using Shared;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Shared;
+using indexer.Messaging;
 
 namespace Indexer;
     public class App
     {
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
+
         public void Run()
         {
+            
             IDatabase db = GetDatabase();
             Crawler crawler = new Crawler(db);
 
@@ -30,6 +35,15 @@ namespace Indexer;
             var totalOccurrences = db.GetTotalOccurrences();
             Console.WriteLine($"Total indexed word occurrences: {totalOccurrences}");
 
+            if (crawler.DocumentsIndexed > 0)
+            {
+                PublishIndexingCompleted();
+
+            }
+            else
+            {
+                _logger.Info("No files indexed - no notification sent");
+            }
             Console.Write("How many top words do you want to see? ");
             string input = Console.ReadLine();
             if (!int.TryParse(input, out int count) || count <= 0)
@@ -56,4 +70,17 @@ namespace Indexer;
             Console.WriteLine("Wrong input - try again...");
             return GetDatabase();
         }
-    }
+
+        private void PublishIndexingCompleted()
+        {
+            using var publisher = new RabbitMQPublisher();
+
+            var evt = new IndexingEvent
+            {
+                Timestamp = DateTime.UtcNow
+            };
+
+            publisher.Publish(evt);
+        }
+
+}
