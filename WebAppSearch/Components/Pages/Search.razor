@@ -2,7 +2,6 @@
 @page "/search"
 @using Shared.Model
 @using System.Text.Json
-@using Microsoft.Extensions.Http
 @rendermode InteractiveServer
 @inject HttpClient Http
 
@@ -59,14 +58,14 @@
         transition: var(--transition-slow);
     }
 
-        .search-page.has-results {
-            justify-content: flex-start;
-        }
+    .search-page.has-results {
+        justify-content: flex-start;
+    }
 
-        .search-page:not(.has-results) {
-            justify-content: center;
-            padding-top: 0;
-        }
+    .search-page:not(.has-results) {
+        justify-content: center;
+        padding-top: 0;
+    }
 
     .search-brand {
         text-align: center;
@@ -122,11 +121,11 @@
         box-shadow: var(--shadow-soft);
     }
 
-        .search-input-wrapper:focus-within {
-            border-color: var(--border-active);
-            box-shadow: var(--shadow-elevated), var(--shadow-glow);
-            background: #111827;
-        }
+    .search-input-wrapper:focus-within {
+        border-color: var(--border-active);
+        box-shadow: var(--shadow-elevated), var(--shadow-glow);
+        background: #111827;
+    }
 
     .search-input-row {
         display: flex;
@@ -160,9 +159,9 @@
         caret-color: var(--accent);
     }
 
-        .search-input::placeholder {
-            color: var(--text-dim);
-        }
+    .search-input::placeholder {
+        color: var(--text-dim);
+    }
 
     .search-btn {
         flex-shrink: 0;
@@ -179,24 +178,24 @@
         transition: var(--transition-fast);
     }
 
-        .search-btn:hover:not(:disabled) {
-            background: var(--accent-hover);
-            transform: scale(1.05);
-        }
+    .search-btn:hover:not(:disabled) {
+        background: var(--accent-hover);
+        transform: scale(1.05);
+    }
 
-        .search-btn:active:not(:disabled) {
-            transform: scale(0.95);
-        }
+    .search-btn:active:not(:disabled) {
+        transform: scale(0.95);
+    }
 
-        .search-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+    .search-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
 
-        .search-btn svg {
-            width: 20px;
-            height: 20px;
-        }
+    .search-btn svg {
+        width: 20px;
+        height: 20px;
+    }
 
     .search-options {
         display: flex;
@@ -219,10 +218,10 @@
         border: 1px solid transparent;
     }
 
-        .toggle-group:hover {
-            background: var(--accent-dim);
-            border-color: var(--border);
-        }
+    .toggle-group:hover {
+        background: var(--accent-dim);
+        border-color: var(--border);
+    }
 
     .toggle-track {
         position: relative;
@@ -234,9 +233,9 @@
         flex-shrink: 0;
     }
 
-        .toggle-track.active {
-            background: var(--accent);
-        }
+    .toggle-track.active {
+        background: var(--accent);
+    }
 
     .toggle-thumb {
         position: absolute;
@@ -287,10 +286,10 @@
         border-bottom: 1px solid var(--border);
     }
 
-        .results-stats .stat-highlight {
-            color: var(--accent);
-            font-weight: 500;
-        }
+    .results-stats .stat-highlight {
+        color: var(--accent);
+        font-weight: 500;
+    }
 
     .ignored-bar {
         display: flex;
@@ -305,11 +304,11 @@
         color: var(--warning);
     }
 
-        .ignored-bar svg {
-            flex-shrink: 0;
-            width: 16px;
-            height: 16px;
-        }
+    .ignored-bar svg {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+    }
 
     .results-list {
         max-width: 680px;
@@ -331,11 +330,11 @@
         animation: cardSlideIn var(--transition-slow) both;
     }
 
-        .result-card:hover {
-            border-color: var(--border-active);
-            background: #1f2f52;
-            box-shadow: var(--shadow-soft);
-        }
+    .result-card:hover {
+        border-color: var(--border-active);
+        background: #1f2f52;
+        box-shadow: var(--shadow-soft);
+    }
 
     .result-card-header {
         display: flex;
@@ -396,11 +395,11 @@
         gap: 5px;
     }
 
-        .result-detail-item svg {
-            width: 13px;
-            height: 13px;
-            opacity: 0.6;
-        }
+    .result-detail-item svg {
+        width: 13px;
+        height: 13px;
+        opacity: 0.6;
+    }
 
     .result-missing {
         color: var(--warning);
@@ -429,13 +428,13 @@
         animation: dotPulse 1.4s infinite ease-in-out;
     }
 
-        .loading-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
+    .loading-dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
 
-        .loading-dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
+    .loading-dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
 
     .loading-text {
         font-size: 0.88rem;
@@ -461,11 +460,11 @@
         font-size: 0.88rem;
     }
 
-        .error-content svg {
-            flex-shrink: 0;
-            width: 18px;
-            height: 18px;
-        }
+    .error-content svg {
+        flex-shrink: 0;
+        width: 18px;
+        height: 18px;
+    }
 
     @@keyframes dotPulse {
         0%, 80%, 100% {
@@ -498,27 +497,25 @@
         font-size: 0.88rem;
     }
 
-        .empty-hint kbd {
-            display: inline-block;
-            padding: 2px 8px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-        }
+    .empty-hint kbd {
+        display: inline-block;
+        padding: 2px 8px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+    }
 </style>
 
 <div class="search-page @(result != null ? "has-results" : "")">
 
-    <!-- Brand -->
     <div class="search-brand">
         <h1>SearchEngine</h1>
         <p>Søg i indekserede dokumenter</p>
     </div>
 
-    <!-- Search Input -->
     <div class="search-container">
         <div class="search-input-wrapper">
             <div class="search-input-row">
@@ -526,11 +523,13 @@
                     <circle cx="11" cy="11" r="8" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
+
                 <input class="search-input"
                        @bind="inputText"
                        @bind:event="oninput"
                        @onkeydown="HandleKeyDown"
                        placeholder="Søg efter ord i dokumenter..." />
+
                 <button class="search-btn" @onclick="ExecuteSearch" disabled="@isLoading">
                     @if (isLoading)
                     {
@@ -550,25 +549,12 @@
             </div>
         </div>
 
-        <!-- Options -->
         <div class="search-options">
             <div class="toggle-group" @onclick="ToggleCaseSensitive">
                 <div class="toggle-track @(caseSensitive ? "active" : "")">
                     <div class="toggle-thumb"></div>
                 </div>
                 <span class="toggle-label">Case-sensitive</span>
-            </div>
-            <div class="toggle-group" @onclick="ToggleLoadBalance">
-                <div class="toggle-track @(loadBalance ? "active" : "")">
-                    <div class="toggle-thumb"></div>
-                </div>
-                <span class="toggle-label">Load balancer</span>
-            </div>
-            <div class="toggle-group" @onclick="ToggleCoordinator">
-                <div class="toggle-track @(useCoordinator ? "active" : "")">
-                    <div class="toggle-thumb"></div>
-                </div>
-                <span class="toggle-label">Coordinator</span>
             </div>
         </div>
     </div>
@@ -580,7 +566,6 @@
         </div>
     }
 
-    <!-- Loading -->
     @if (isLoading)
     {
         <div class="loading-container">
@@ -593,7 +578,6 @@
         </div>
     }
 
-    <!-- Error -->
     @if (errorMessage != null)
     {
         <div class="error-banner">
@@ -608,7 +592,6 @@
         </div>
     }
 
-    <!-- Results -->
     @if (result != null)
     {
         <div class="results-meta">
@@ -618,8 +601,6 @@
                 <span>@result.TimeUsed.TotalMilliseconds.ToString("F1") ms</span>
                 <span>·</span>
                 <span>@(caseSensitive ? "Case-sensitive" : "Case-insensitive")</span>
-                <span>·</span>
-                <span>@(useCoordinator ? "Coordinator" : loadBalance ? "Load balanced" : "Direct")</span>
             </div>
 
             @if (result.Ignored?.Count > 0)
@@ -639,6 +620,7 @@
             @{
                 int idx = 1;
             }
+
             @foreach (var doc in result.DocumentHits)
             {
                 <div class="result-card" style="animation-delay: @(idx * 50)ms">
@@ -647,6 +629,7 @@
                         <span class="result-url">@GetFileName(doc.Document.mUrl)</span>
                         <span class="result-hits-badge">@doc.NoOfHits hit@(doc.NoOfHits != 1 ? "s" : "")</span>
                     </div>
+
                     <div class="result-details">
                         <span class="result-detail-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -656,6 +639,7 @@
                             @doc.Document.mUrl
                         </span>
                     </div>
+
                     <div class="result-details">
                         <span class="result-detail-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -666,6 +650,7 @@
                             </svg>
                             Indekseret: @doc.Document.mIdxTime
                         </span>
+
                         <span class="result-detail-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <circle cx="12" cy="12" r="10" />
@@ -674,11 +659,13 @@
                             Oprettet: @doc.Document.mCreationTime
                         </span>
                     </div>
+
                     @if (doc.Missing?.Count > 0)
                     {
                         <div class="result-missing">Manglende ord: @string.Join(", ", doc.Missing)</div>
                     }
                 </div>
+
                 idx++;
             }
         </div>
@@ -689,15 +676,16 @@
     private string inputText = "";
     private bool isLoading = false;
     private bool caseSensitive = false;
-    private bool loadBalance = true;
-    private bool useCoordinator = false;
     private string? errorMessage = null;
     private SearchResult? result = null;
     private string? lastQuery = null;
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter") await ExecuteSearch();
+        if (e.Key == "Enter")
+        {
+            await ExecuteSearch();
+        }
     }
 
     private async Task ToggleCaseSensitive()
@@ -710,29 +698,12 @@
         }
     }
 
-    private async Task ToggleLoadBalance()
-    {
-        loadBalance = !loadBalance;
-
-        if (result != null && !string.IsNullOrWhiteSpace(lastQuery))
-        {
-            await ExecuteSearch();
-        }
-    }
-
-    private async Task ToggleCoordinator()
-    {
-        useCoordinator = !useCoordinator;
-
-        if (result != null && !string.IsNullOrWhiteSpace(lastQuery))
-        {
-            await ExecuteSearch();
-        }
-    }
-
     private async Task ExecuteSearch()
     {
-        if (string.IsNullOrWhiteSpace(inputText)) return;
+        if (string.IsNullOrWhiteSpace(inputText))
+        {
+            return;
+        }
 
         isLoading = true;
         errorMessage = null;
@@ -740,6 +711,7 @@
         lastQuery = inputText;
 
         var query = inputText.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
         var request = new SearchRequest
         {
             Query = query,
@@ -749,15 +721,7 @@
 
         try
         {
-            string url;
-            if (useCoordinator)
-                url = "http://localhost:5141/api/coordinator/search";
-            else if (loadBalance)
-                url = "http://localhost:5144/loadbalance/search";
-            else
-                url = "http://localhost:5272/api/search";
-
-            var response = await Http.PostAsJsonAsync(url, request);
+            var response = await Http.PostAsJsonAsync("http://localhost:5272/api/search", request);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -766,7 +730,10 @@
             }
 
             result = await response.Content.ReadFromJsonAsync<SearchResult>(
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
         }
         catch (Exception ex)
         {
@@ -781,6 +748,7 @@
     private string GetFileName(string path)
     {
         var parts = path.Replace("\\", "/").Split("/");
+
         return parts.Length >= 2
             ? $"{parts[^2]}/{parts[^1]}"
             : parts[^1];
