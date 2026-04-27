@@ -20,6 +20,9 @@ namespace Indexer;
 
         IDatabase mdatabase;
 
+        public int DocumentsIndexed => documentCounter;
+
+
         public Crawler(IDatabase db){ mdatabase = db; }
 
         //Return a set of words in the file.
