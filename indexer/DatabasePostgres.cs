@@ -12,7 +12,7 @@ public class DatabasePostgres : IDatabase
     public DatabasePostgres()
     {
         _connection = new NpgsqlConnection();
-        _connection.ConnectionString = Paths.POSTGRES_DATABASE;
+        _connection.ConnectionString = Config.POSTGRES_CONNECTION;
         _connection.Open();
 
         Execute("DROP TABLE IF EXISTS Occ");

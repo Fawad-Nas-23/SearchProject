@@ -1,0 +1,10 @@
+global:
+  postgresql:
+    auth:
+      postgresPassword: "1234"
+      username: "searcher"
+      password: "searcher123"
+      database: "SearchDB"
+persistence:
+  enabled: true
+  size: 2Gi
