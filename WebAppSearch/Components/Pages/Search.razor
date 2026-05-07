@@ -29,7 +29,6 @@
         --error: #f28b82;
         --radius-sm: 8px;
         --radius-md: 16px;
-        --radius-lg: 24px;
         --radius-xl: 28px;
         --radius-pill: 100px;
         --shadow-soft: 0 1px 3px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2);
@@ -267,6 +266,61 @@
 
     .toggle-track.active + .toggle-label {
         color: var(--accent);
+    }
+
+    .agent-box {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+        padding: 0 8px;
+    }
+
+    .agent-email-input {
+        flex: 1;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        color: var(--text-primary);
+        padding: 10px 16px;
+        outline: none;
+        font-size: 0.88rem;
+    }
+
+    .agent-email-input:focus {
+        border-color: var(--border-active);
+    }
+
+    .agent-btn {
+        border: none;
+        border-radius: var(--radius-pill);
+        background: var(--accent);
+        color: var(--bg-primary);
+        padding: 10px 18px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition-fast);
+    }
+
+    .agent-btn:hover:not(:disabled) {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+    }
+
+    .agent-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .agent-message {
+        margin-top: 10px;
+        padding: 0 8px;
+        color: var(--success);
+        font-size: 0.82rem;
+    }
+
+    .agent-message.error {
+        color: var(--error);
     }
 
     .results-meta {
@@ -557,6 +611,24 @@
                 <span class="toggle-label">Case-sensitive</span>
             </div>
         </div>
+
+        <div class="agent-box">
+            <input class="agent-email-input"
+                   @bind="agentEmail"
+                   @bind:event="oninput"
+                   placeholder="Email til søgeagent..." />
+
+            <button class="agent-btn" @onclick="CreateSearchAgent" disabled="@isCreatingAgent">
+                @(isCreatingAgent ? "Opretter..." : "Opret søgeagent")
+            </button>
+        </div>
+
+        @if (agentMessage != null)
+        {
+            <div class="agent-message @(agentMessageIsError ? "error" : "")">
+                @agentMessage
+            </div>
+        }
     </div>
 
     @if (!isLoading && result == null && errorMessage == null)
@@ -680,6 +752,11 @@
     private SearchResult? result = null;
     private string? lastQuery = null;
 
+    private string agentEmail = "";
+    private string? agentMessage = null;
+    private bool agentMessageIsError = false;
+    private bool isCreatingAgent = false;
+
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
@@ -742,6 +819,63 @@
         finally
         {
             isLoading = false;
+        }
+    }
+
+    private async Task CreateSearchAgent()
+    {
+        if (string.IsNullOrWhiteSpace(inputText))
+        {
+            agentMessage = "Skriv først en søgning.";
+            agentMessageIsError = true;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(agentEmail))
+        {
+            agentMessage = "Indtast en email.";
+            agentMessageIsError = true;
+            return;
+        }
+
+        isCreatingAgent = true;
+        agentMessage = null;
+        agentMessageIsError = false;
+
+        var query = inputText.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+
+        var agent = new
+        {
+            email = agentEmail,
+            searchWords = query
+        };
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync(
+                "http://localhost:5100/api/SearchAgent",
+                agent
+            );
+
+            if (!response.IsSuccessStatusCode)
+            {
+                agentMessage = $"Kunne ikke oprette søgeagent: {response.StatusCode}";
+                agentMessageIsError = true;
+                return;
+            }
+
+            agentMessage = "Søgeagent oprettet.";
+            agentMessageIsError = false;
+            agentEmail = "";
+        }
+        catch (Exception ex)
+        {
+            agentMessage = $"Kunne ikke kontakte SearchAgentService: {ex.Message}";
+            agentMessageIsError = true;
+        }
+        finally
+        {
+            isCreatingAgent = false;
         }
     }
 
