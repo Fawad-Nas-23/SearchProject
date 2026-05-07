@@ -1,5 +1,6 @@
 using Npgsql;
 using SearchAgentService.Models;
+using Shared;
 
 namespace SearchAgentService.Repository;
 
@@ -21,8 +22,8 @@ public class SearchAgentPostgresRepository : ISearchAgentRepository
     {
         _logger = logger;
 
-        var connectionString = configuration["POSTGRES_DATABASE"]
-            ?? "Host=127.0.0.1;Port=5433;Username=postgres;Password=1234;Database=SearchDB";
+        var connectionString = configuration["SEARCHAGENT_DATABASE"] ?? Paths.POSTGRES_AGENT_DATABASE;
+        _logger.LogInformation("Connecting to PostgreSQL database at {DbPath}", connectionString);
 
         _logger.LogInformation(
             "Connecting to PostgreSQL database");

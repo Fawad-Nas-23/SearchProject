@@ -8,7 +8,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddHttpClient<SearchAgentRunner>();
+builder.Services.AddHttpClient<SearchAgentService.Services.SearchAgentService>();
+
+builder.Services.AddScoped<ISearchAgentService, SearchAgentService.Services.SearchAgentService>();
 
 builder.Services.AddSingleton<ISearchAgentRepository, SearchAgentPostgresRepository>();
 

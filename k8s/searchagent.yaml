@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: searchagent
+  labels:
+    app: searchagent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: searchagent
+  template:
+    metadata:
+      labels:
+        app: searchagent
+    spec:
+      containers:
+        - name: searchagent
+          image: fawad23/searchagent:1.1.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SEARCHAGENT_DATABASE
+              value: "Host=postgresql-db.database.svc.cluster.local;Port=5432;Username=postgres;Password=1234;Database=AgentDB"
+            - name: SEARCH_API_URL
+              value: "http://search-api"
+            - name: RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_DEFAULT_PASS
+            - name: RABBITMQ_QUEUE
+              value: "indexer.events"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: searchagent
+  labels:
+    app: searchagent
+spec:
+  type: ClusterIP
+  selector:
+    app: searchagent
+  ports:
+    - port: 80
+      targetPort: 8080

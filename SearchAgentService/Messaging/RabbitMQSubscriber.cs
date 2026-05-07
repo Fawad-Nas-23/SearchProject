@@ -113,7 +113,7 @@ public class RabbitMQSubscriber : BackgroundService
                 if (indexingEvent?.EventType == "IndexingCompleted")
                 {
                     using var scope = _scopeFactory.CreateScope();
-                    var runner = scope.ServiceProvider.GetRequiredService<SearchAgentRunner>();
+                    var runner = scope.ServiceProvider.GetRequiredService<SearchAgentService.Services.SearchAgentService>();
 
                     var results = await runner.RunAllAgentsAsync();
 
