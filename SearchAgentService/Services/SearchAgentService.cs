@@ -26,7 +26,7 @@ public class SearchAgentService : ISearchAgentService
         _repository = repository;
         _httpClient = httpClient;
         _logger = logger;
-        _searchApiUrl = configuration["SearchApiUrl"] ?? "http://localhost:5272/api/search";
+        _searchApiUrl = configuration["SEARCH_API_URL"] ?? "http://localhost:5272";
     }
 
     public SearchAgent Create(SearchAgent agent)
@@ -139,8 +139,8 @@ public class SearchAgentService : ISearchAgentService
 
             var response = await _httpClient.PostAsJsonAsync(
                 $"{_searchApiUrl}/api/search",
-                request 
-            );           
+                request
+            );
 
             if (!response.IsSuccessStatusCode)
             {

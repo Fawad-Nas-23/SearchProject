@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: searchagent
-          image: fawad23/searchagent:1.1.0
+          image: fawad23/searchagent:1.3.0
           ports:
             - containerPort: 8080
           env:

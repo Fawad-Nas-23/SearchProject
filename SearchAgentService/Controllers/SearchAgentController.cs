@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SearchAgentService.Models;
 using SearchAgentService.Services;
+using Shared.Model;
 
 namespace SearchAgentService.Controllers;
 
@@ -20,10 +21,16 @@ public class SearchAgentController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult<SearchAgent> Create(SearchAgent agent)
+    public ActionResult<SearchAgent> Create(SearchAgentRequest request)
     {
         try
         {
+            var agent = new SearchAgent
+            {
+                Email = request.Email,
+                SearchWords = request.SearchWords
+            };
+
             var created = _service.Create(agent);
             return Ok(created);
         }
