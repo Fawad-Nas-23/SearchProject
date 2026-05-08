@@ -4,6 +4,7 @@
 @using System.Text.Json
 @rendermode InteractiveServer
 @inject HttpClient Http
+@inject IConfiguration Configuration
 
 <PageTitle>Search</PageTitle>
 
@@ -347,6 +348,8 @@
 </div>
 
 @code {
+
+    private string OrchestratorUrl => Configuration["ORCHESTRATOR_URL"] ?? "http://localhost:5190";
     private string activeTab = "search";
     private string inputText = "";
     private string lastSearchQuery = "";
@@ -383,7 +386,7 @@
                 CaseSensitive = caseSensitive
             };
 
-            var response = await Http.PostAsJsonAsync("http://localhost:5190/api/orchestrator/search", request);
+            var response = await Http.PostAsJsonAsync($"{OrchestratorUrl}/api/orchestrator/search", request);
             if (response.IsSuccessStatusCode)
             {
                 result = await response.Content.ReadFromJsonAsync<SearchResult>(new JsonSerializerOptions
@@ -418,7 +421,7 @@
                 searchWords = agentKeywords.Split(' ', StringSplitOptions.RemoveEmptyEntries)
             };
 
-            var response = await Http.PostAsJsonAsync("http://localhost:5190/api/orchestrator/agents", agent);
+            var response = await Http.PostAsJsonAsync($"{OrchestratorUrl}/api/orchestrator/agents", agent);
 
             if (response.IsSuccessStatusCode)
             {

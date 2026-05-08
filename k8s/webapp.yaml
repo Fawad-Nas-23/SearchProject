@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  labels:
+    app: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+        - name: webapp
+          image: fawad23/webapp:1.1.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ORCHESTRATOR_URL
+              value: "http://orchestrator"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp
+  labels:
+    app: webapp
+spec:
+  type: NodePort
+  selector:
+    app: webapp
+  ports:
+    - port: 80
+      targetPort: 8080
+      nodePort: 30080
