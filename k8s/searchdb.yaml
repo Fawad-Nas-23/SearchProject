@@ -5,14 +5,7 @@ global:
       username: "searcher"
       password: "searcher123"
       database: "SearchDB"
-
-primary:
-  initdb:
-    scripts:
-      01-create-agentdb.sql: |
-        CREATE DATABASE "AgentDB";
-        GRANT ALL PRIVILEGES ON DATABASE "AgentDB" TO "searcher";
-
+      
 persistence:
   enabled: true
   size: 2Gi

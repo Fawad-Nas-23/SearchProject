@@ -16,17 +16,20 @@ public class SearchAgentService : ISearchAgentService
     private readonly HttpClient _httpClient;
     private readonly ILogger<SearchAgentService> _logger;
     private readonly string _searchApiUrl;
+    private readonly IEmailService _emailService;
 
     public SearchAgentService(
         ISearchAgentRepository repository,
         HttpClient httpClient,
         ILogger<SearchAgentService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IEmailService emailService)
     {
         _repository = repository;
         _httpClient = httpClient;
         _logger = logger;
         _searchApiUrl = configuration["SEARCH_API_URL"] ?? "http://localhost:5272";
+        _emailService = emailService;
     }
 
     public SearchAgent Create(SearchAgent agent)
@@ -77,7 +80,6 @@ public class SearchAgentService : ISearchAgentService
 
         var agents = _repository.GetAll();
         var runResults = new List<SearchAgentRunResult>();
-        var agentsToDelete = new List<int>();
 
         _logger.LogInformation(
             "Fetched SearchAgents for execution | Count: {Count}",
@@ -88,22 +90,24 @@ public class SearchAgentService : ISearchAgentService
         {
             var tasks = batch.Select(agent => RunSingleAgentAsync(agent));
             var batchResults = await Task.WhenAll(tasks);
-
-            foreach (var result in batchResults)
-            {
-                runResults.Add(result);
-                if (result.MatchFound)
-                {
-                    agentsToDelete.Add(result.AgentId);
-                }
-            }
+            runResults.AddRange(batchResults);
         }
 
-        // Slet KUN efter alt er kørt succesfuldt
-        foreach (var id in agentsToDelete)
+        // Send email og slet KUN efter alt er kørt succesfuldt
+        foreach (var result in runResults.Where(r => r.MatchFound))
         {
-            _repository.DeleteById(id);
-            _logger.LogInformation("Deleted matched agent | AgentId: {AgentId}", id);
+            var documentUrls = result.SearchResult?.DocumentHits?
+                .Select(d => d.Document.mUrl)
+                .ToList() ?? new List<string>();
+
+            await _emailService.SendAgentResultAsync(
+                result.Email,
+                result.SearchWords,
+                result.NumberOfHits,
+                documentUrls);
+
+            _repository.DeleteById(result.AgentId);
+            _logger.LogInformation("Deleted matched agent | AgentId: {AgentId}", result.AgentId);
         }
 
         stopwatch.Stop();
@@ -112,7 +116,7 @@ public class SearchAgentService : ISearchAgentService
             "SearchAgent run completed | Total: {Total} | Matches: {Matches} | Deleted: {Deleted} | DurationMs: {DurationMs}",
             runResults.Count,
             runResults.Count(r => r.MatchFound),
-            agentsToDelete.Count,
+            runResults.Count(r => r.MatchFound),
             stopwatch.ElapsedMilliseconds);
 
         return runResults;

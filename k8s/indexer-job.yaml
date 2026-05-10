@@ -30,18 +30,18 @@ spec:
             - -c
             - |
               echo "Waiting for postgres..."
-              until nc -z postgresql-db.database.svc.cluster.local 5432; do sleep 2; done
+              until nc -z searchdb-postgresql.database.svc.cluster.local 5432; do sleep 2; done
               echo "Postgres is up!"
       containers:
         - name: indexer
-          image: fawad23/indexer:1.0.0
+          image: fawad23/indexer:1.1.1
           env:
             - name: INDEXER_DATABASE
               value: "postgres"
             - name: INDEXER_FOLDER
               value: "/data/small/compaq"
             - name: POSTGRES_CONNECTION
-              value: "Host=postgresql-db.database.svc.cluster.local;Port=5432;Username=postgres;Password=1234;Database=SearchDB"
+              value: "Host=searchdb-postgresql.database.svc.cluster.local;Port=5432;Username=postgres;Password=1234;Database=SearchDB"
             - name: RABBITMQ_HOST
               value: "rabbitmq"
             - name: RABBITMQ_USER

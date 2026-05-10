@@ -1,16 +1,16 @@
-using System.Text;
-using System.Text.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Text;
+using System.Text.Json;
+using RabbitMQ.Client;            // Denne mangler sandsynligvis
+using RabbitMQ.Client.Events;     // Denne mangler sandsynligvis
+using RabbitMQ.Client.Exceptions; // God at have til fejlhåndtering
 using SearchAgentService.Services;
-
-namespace SearchAgentService.Messaging;
-
+using SearchAgentService.Messaging;
 public class RabbitMQSubscriber : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<RabbitMQSubscriber> _logger;
-
     private readonly string _queueName;
     private readonly string _hostName;
     private readonly int _port;
@@ -35,60 +35,65 @@ public class RabbitMQSubscriber : BackgroundService
         _queueName = configuration["RABBITMQ_QUEUE"] ?? "indexer.events";
     }
 
-    public override Task StartAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        try
+        // PERMANENT FIX: Retry loop to handle RabbitMQ startup delay
+        while (!stoppingToken.IsCancellationRequested)
         {
-            var factory = new ConnectionFactory
+            try
             {
-                HostName = _hostName,
-                Port = _port,
-                UserName = _userName,
-                Password = _password,
-                DispatchConsumersAsync = true
-            };
+                if (_connection == null || !_connection.IsOpen)
+                {
+                    _logger.LogInformation("Attempting to connect to RabbitMQ at {Host}:{Port}...", _hostName, _port);
+                    InitializeConnection();
+                }
 
-            _connection = factory.CreateConnection("searchagent-subscriber");
-            _channel = _connection.CreateModel();
+                if (_channel != null)
+                {
+                    SubscribeToQueue();
 
-            _channel.QueueDeclare(
-                queue: _queueName,
-                durable: true,
-                exclusive: false,
-                autoDelete: false,
-                arguments: null);
-
-            _channel.BasicQos(
-                prefetchSize: 0,
-                prefetchCount: 1,
-                global: false);
-
-            _logger.LogInformation(
-                "SearchAgent subscriber connected to RabbitMQ at {Host}:{Port}, queue '{Queue}'",
-                _hostName,
-                _port,
-                _queueName);
+                    // Stay alive while the connection is healthy
+                    await Task.Delay(Timeout.Infinite, stoppingToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("RabbitMQ not available yet. Retrying in 5 seconds... (Error: {Message})", ex.Message);
+                await Task.Delay(5000, stoppingToken);
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex,
-                "Could not connect SearchAgent subscriber to RabbitMQ at {Host}:{Port}, queue '{Queue}'",
-                _hostName,
-                _port,
-                _queueName);
-        }
-
-        return base.StartAsync(cancellationToken);
     }
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    private void InitializeConnection()
     {
-        if (_channel == null)
+        var factory = new ConnectionFactory
         {
-            _logger.LogWarning("RabbitMQ channel is null. Subscriber not started.");
-            return Task.CompletedTask;
-        }
+            HostName = _hostName,
+            Port = _port,
+            UserName = _userName,
+            Password = _password,
+            DispatchConsumersAsync = true,
+            AutomaticRecoveryEnabled = true // Helps with network hiccups later
+        };
+
+        _connection = factory.CreateConnection("searchagent-subscriber");
+        _channel = _connection.CreateModel();
+
+        _channel.QueueDeclare(
+            queue: _queueName,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: null);
+
+        _channel.BasicQos(prefetchSize: 0, prefetchCount: 1, global: false);
+
+        _logger.LogInformation("Successfully connected and declared queue: {Queue}", _queueName);
+    }
+
+    private void SubscribeToQueue()
+    {
+        if (_channel == null) return;
 
         var consumer = new AsyncEventingBasicConsumer(_channel);
 
@@ -98,76 +103,35 @@ public class RabbitMQSubscriber : BackgroundService
             {
                 var body = ea.Body.ToArray();
                 var json = Encoding.UTF8.GetString(body);
+                var indexingEvent = JsonSerializer.Deserialize<IndexingEvent>(json,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                var indexingEvent = JsonSerializer.Deserialize<IndexingEvent>(
-                    json,
-                    new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
-
-                _logger.LogInformation(
-                    "Received RabbitMQ event: {EventType}",
-                    indexingEvent?.EventType ?? "Unknown");
+                _logger.LogInformation("Received RabbitMQ event: {EventType}", indexingEvent?.EventType ?? "Unknown");
 
                 if (indexingEvent?.EventType == "IndexingCompleted")
                 {
                     using var scope = _scopeFactory.CreateScope();
                     var runner = scope.ServiceProvider.GetRequiredService<SearchAgentService.Services.SearchAgentService>();
-
-                    var results = await runner.RunAllAgentsAsync();
-
-                    _logger.LogInformation(
-                        "Search agents executed after indexing event. Checked agents: {Count}",
-                        results.Count);
-                }
-                else
-                {
-                    _logger.LogWarning(
-                        "Ignored RabbitMQ event with type: {EventType}",
-                        indexingEvent?.EventType ?? "Unknown");
+                    await runner.RunAllAgentsAsync();
                 }
 
-                _channel.BasicAck(
-                    deliveryTag: ea.DeliveryTag,
-                    multiple: false);
+                _channel.BasicAck(ea.DeliveryTag, false);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while handling RabbitMQ message");
-
-                _channel.BasicNack(
-                    deliveryTag: ea.DeliveryTag,
-                    multiple: false,
-                    requeue: true);
+                _logger.LogError(ex, "Error while handling message. Requeuing...");
+                _channel.BasicNack(ea.DeliveryTag, false, true);
             }
         };
 
-        _channel.BasicConsume(
-            queue: _queueName,
-            autoAck: false,
-            consumer: consumer);
-
-        _logger.LogInformation("RabbitMQ subscriber is now listening on queue '{Queue}'", _queueName);
-
-        return Task.CompletedTask;
+        _channel.BasicConsume(queue: _queueName, autoAck: false, consumer: consumer);
+        _logger.LogInformation("Subscribed to RabbitMQ queue. Waiting for events...");
     }
 
     public override void Dispose()
     {
-        try
-        {
-            _channel?.Close();
-            _channel?.Dispose();
-
-            _connection?.Close();
-            _connection?.Dispose();
-        }
-        catch
-        {
-            // Ignore shutdown errors
-        }
-
+        _channel?.Close();
+        _connection?.Close();
         base.Dispose();
     }
 }
