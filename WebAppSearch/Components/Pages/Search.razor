@@ -5,6 +5,7 @@
 @rendermode InteractiveServer
 @inject HttpClient Http
 @inject IConfiguration Configuration
+@inject ILogger<Search> Logger
 
 <PageTitle>Search</PageTitle>
 
@@ -212,7 +213,6 @@
         transition: 0.3s;
     }
 
-    /* Animation Container */
     .status-overlay {
         position: fixed;
         top: 50%;
@@ -222,7 +222,6 @@
         pointer-events: none;
     }
 
-    /* 3D Paper Plane */
     .paper-plane {
         font-size: 80px;
         display: inline-block;
@@ -235,7 +234,6 @@
         100% { transform: translate(600px, -400px) rotate(15deg) scale(0); opacity: 0; }
     }
 
-    /* Error Message */
     .error-msg {
         background: #f28b82;
         color: #3c1e1e;
@@ -348,7 +346,6 @@
 </div>
 
 @code {
-
     private string OrchestratorUrl => Configuration["ORCHESTRATOR_URL"] ?? "http://localhost:5190";
     private string activeTab = "search";
     private string inputText = "";
@@ -373,6 +370,7 @@
     {
         if (string.IsNullOrWhiteSpace(inputText)) return;
 
+        Logger.LogInformation("Webapp: Starting search for query: '{Query}'", inputText);
         isLoading = true;
         result = null;
         lastSearchQuery = inputText;
@@ -387,17 +385,25 @@
             };
 
             var response = await Http.PostAsJsonAsync($"{OrchestratorUrl}/api/orchestrator/search", request);
+            
             if (response.IsSuccessStatusCode)
             {
                 result = await response.Content.ReadFromJsonAsync<SearchResult>(new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
+                
+                int hitCount = result?.DocumentHits?.Count ?? 0;
+                Logger.LogInformation("Webapp: Search returned successfully with {Count} hits.", hitCount);
+            }
+            else
+            {
+                Logger.LogWarning("Webapp: Orchestrator returned non-success code: {StatusCode}", response.StatusCode);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Fejl under søgning: {ex.Message}");
+            Logger.LogError(ex, "Webapp: Critical error during ExecuteSearch for query '{Query}'", inputText);
         }
         finally
         {
@@ -409,9 +415,12 @@
     {
         if (string.IsNullOrWhiteSpace(agentKeywords) || string.IsNullOrWhiteSpace(agentEmail))
         {
+            Logger.LogWarning("Webapp: Agent activation failed - empty fields.");
             ShowError("Udfyld venligst begge felter.");
             return;
         }
+
+        Logger.LogInformation("Webapp: Attempting to activate agent for {Email} with keywords: {Keywords}", agentEmail, agentKeywords);
 
         try
         {
@@ -425,6 +434,7 @@
 
             if (response.IsSuccessStatusCode)
             {
+                Logger.LogInformation("Webapp: Agent created successfully for {Email}", agentEmail);
                 showPlane = true;
                 agentKeywords = "";
                 agentEmail = "";
@@ -437,11 +447,13 @@
             }
             else
             {
+                Logger.LogWarning("Webapp: Failed to create agent. Orchestrator status: {Status}", response.StatusCode);
                 ShowError("Kunne ikke oprette agent. Prøv igen senere.");
             }
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Webapp: Connection error while activating agent for {Email}", agentEmail);
             ShowError($"Forbindelsesfejl: {ex.Message}");
         }
     }

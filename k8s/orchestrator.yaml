@@ -1,3 +1,6 @@
+#########################################################
+# Orchestrator - Monitoring Enhanced
+#########################################################
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,13 +15,14 @@ spec:
   template:
     metadata:
       labels:
-        app: orchestrator
+        app: orchestrator # Promtail uses this to label your logs in Loki
     spec:
       containers:
         - name: orchestrator
           image: fawad23/orchestrator:1.1.0
           ports:
-            - containerPort: 8080
+            - name: http-web
+              containerPort: 8080
           env:
             - name: SEARCH_API_URL
               value: "http://search-api"
@@ -32,10 +36,34 @@ metadata:
   name: orchestrator
   labels:
     app: orchestrator
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "80"
 spec:
   type: ClusterIP
   selector:
     app: orchestrator
   ports:
-    - port: 80
+    - name: http # Name is required for the ServiceMonitor
+      port: 80
       targetPort: 8080
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: orchestrator-monitor
+  namespace: monitoring # Important: ServiceMonitors usually live in the monitoring namespace
+  labels:
+    app: orchestrator
+    release: kube-prometheus-stack # Tells Prometheus to include this service
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      app: orchestrator
+  endpoints:
+    - interval: 15s
+      port: http

@@ -1,3 +1,6 @@
+#########################################################
+# SearchAgent Configuration
+#########################################################
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,7 +21,8 @@ spec:
         - name: searchagent
           image: fawad23/searchagent:1.6.0
           ports:
-            - containerPort: 8080
+            - name: http-web
+              containerPort: 8080
           env:
             - name: SEARCHAGENT_DATABASE
               value: "Host=agentdb-postgresql.database.svc.cluster.local;Port=5432;Username=postgres;Password=1234;Database=AgentDB"
@@ -54,10 +58,34 @@ metadata:
   name: searchagent
   labels:
     app: searchagent
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "80"
 spec:
   type: ClusterIP
   selector:
     app: searchagent
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 8080
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: searchagent-monitor
+  namespace: monitoring
+  labels:
+    app: searchagent
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      app: searchagent
+  endpoints:
+    - interval: 15s
+      port: http
