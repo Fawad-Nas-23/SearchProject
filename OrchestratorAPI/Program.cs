@@ -1,7 +1,18 @@
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Exporter;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Configuration.AddEnvironmentVariables();
+
+builder.Services.AddOpenTelemetry()
+                .WithMetrics(metrics =>
+                {
+                    metrics.AddPrometheusExporter();
+                    metrics.AddMeter("Microsoft.AspNetCore.Hosting",
+                                     "Microsoft.AspNetCore.Server.Kestrel");
+                });
 
 var searchApiUrl = builder.Configuration["SEARCH_API_URL"] ?? "http://localhost:5272";
 var agentUrl = builder.Configuration["SEARCHAGENT_URL"] ?? "http://localhost:5100";
@@ -28,6 +39,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseOpenTelemetryPrometheusScrapingEndpoint();
 app.UseCors();
 app.MapControllers();
+
 app.Run();

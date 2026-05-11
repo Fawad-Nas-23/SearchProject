@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: orchestrator
-          image: fawad23/orchestrator:1.1.0
+          image: fawad23/orchestrator:1.2.0
           ports:
             - name: http-web
               containerPort: 8080
