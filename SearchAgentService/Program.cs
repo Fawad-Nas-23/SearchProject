@@ -14,7 +14,7 @@ builder.Services.AddScoped<ISearchAgentService, SearchAgentService.Services.Sear
 
 builder.Services.AddSingleton<IEmailService, EmailService>();
 
-builder.Services.AddSingleton<ISearchAgentRepository, SearchAgentPostgresRepository>();
+builder.Services.AddScoped<ISearchAgentRepository, SearchAgentPostgresRepository>();
 
 builder.Services.AddHostedService<RabbitMQSubscriber>();
 

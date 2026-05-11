@@ -8,7 +8,7 @@ namespace SearchAgentService.Repository;
 /// Repository ansvarlig for databaseoperationer på SearchAgents.
 /// Håndterer CRUD-operationer mod PostgreSQL.
 /// </summary>
-public class SearchAgentPostgresRepository : ISearchAgentRepository
+public class SearchAgentPostgresRepository : ISearchAgentRepository, IDisposable
 {
     private readonly NpgsqlConnection _connection;
     private readonly ILogger<SearchAgentPostgresRepository> _logger;
@@ -210,4 +210,15 @@ public class SearchAgentPostgresRepository : ISearchAgentRepository
             throw;
         }
     }
+
+    public void Dispose()
+    {
+        if (_connection != null)
+        {
+            _connection.Close();
+            _connection.Dispose();
+            _logger.LogInformation("PostgreSQL connection closed and returned to pool");
+        }
+    }
+
 }

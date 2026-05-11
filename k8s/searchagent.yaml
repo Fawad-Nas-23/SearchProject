@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: searchagent
-          image: fawad23/searchagent:1.6.0
+          image: fawad23/searchagent:1.7.0
           ports:
             - name: http-web
               containerPort: 8080

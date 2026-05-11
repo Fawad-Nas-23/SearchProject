@@ -1,61 +1,76 @@
 #########################################################
-# Orchestrator Configuration
+# Secrets
 #########################################################
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-credentials
+type: Opaque
+data:
+  password: Wk9uVU1SWkFtSg==
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: orchestrator
-  labels:
-    app: orchestrator
+  name: search-api
+
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: orchestrator
+      app: search-api
+  replicas: 1
   template:
     metadata:
       labels:
-        app: orchestrator
+        app: search-api
     spec:
       containers:
-        - name: orchestrator
-          image: fawad23/orchestrator:1.1.0
-          ports:
-            - name: http-web
-              containerPort: 8080
+        - name: search-api
+          image: fawad23/search-api:2.3.0
           env:
-            - name: SEARCH_API_URL
-              value: "http://search-api"
-            - name: SEARCHAGENT_URL
-              value: "http://searchagent"
+            - name: INSTANCE
+              value: "Primary"
+            - name: POSTGRES_DATABASE
+              value: "Host=searchdb-postgresql.database.svc.cluster.local;Port=5432;Username=postgres;Password=1234;Database=SearchDB"
+            - name: RedisConnectionString
+              value: "search-redis-master.caching.svc.cluster.local:6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
+          ports:
+            - containerPort: 80
+              protocol: TCP
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: orchestrator
+  name: search-api
   labels:
-    app: orchestrator
+    app: search-api
   annotations:
     prometheus.io/scrape: "true"
-    prometheus.io/port: "80"
+    prometheus.io/port: "metrics"
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
-    app: orchestrator
+    app: search-api
   ports:
-    - name: http # Named port for ServiceMonitor to target
+    - name: metrics
       port: 80
-      targetPort: 8080
+      targetPort: 80
 
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: orchestrator-monitor
+  name: search-api-monitor
   namespace: monitoring
   labels:
-    app: orchestrator
+    app: search-api
     release: kube-prometheus-stack
 spec:
   namespaceSelector:
@@ -63,7 +78,7 @@ spec:
       - default
   selector:
     matchLabels:
-      app: orchestrator
+      app: search-api
   endpoints:
     - interval: 15s
-      port: http # References the name in the Service above
+      port: metrics
