@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: search-api
-          image: fawad23/search-api:2.3.0
+          image: fawad23/search-api:2.5.0
           env:
             - name: INSTANCE
               value: "Primary"
