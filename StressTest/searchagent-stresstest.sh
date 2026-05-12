@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 BASE_URL="http://127.0.0.1:5190"
 BODIES_DIR="bodies"
-ITERATIONS=10
+TOTAL_AGENTS=1000
 PARALLEL=50
 
 if [ ! -d "$BODIES_DIR" ]; then
@@ -11,78 +11,117 @@ if [ ! -d "$BODIES_DIR" ]; then
   exit 1
 fi
 
-# Collect all json files into an array
 FILES=("$BODIES_DIR"/*.json)
-FILES_COUNT=${#FILES[@]}
 
-if [ "$FILES_COUNT" -eq 0 ]; then
-  echo "FEJL: Ingen JSON filer fundet i $BODIES_DIR"
+if [ ! -e "${FILES[0]}" ]; then
+  echo "FEJL: Ingen JSON-filer fundet i '$BODIES_DIR'"
   exit 1
 fi
 
-echo "=== SearchAgent Stress Test (1000 Agents / 10x Iteration) ==="
+FILES_COUNT=${#FILES[@]}
 
-# ----------------------------
-# Create agent function
-# ----------------------------
+echo "=== SearchAgent Stress Test ==="
+echo "Base URL:      $BASE_URL"
+echo "Bodies folder: $BODIES_DIR"
+echo "JSON files:    $FILES_COUNT"
+echo "Agents:        $TOTAL_AGENTS"
+echo "Parallel:      $PARALLEL"
+echo ""
+
+echo "Tester forbindelse til SearchAgent..."
+
+HEALTH_TEST=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/searchagent")
+
+if [ "$HEALTH_TEST" = "000" ]; then
+  echo "FEJL: Kan ikke forbinde til $BASE_URL"
+  echo "Tjek at denne kører i en anden terminal:"
+  echo "kubectl port-forward svc/searchagent 5190:80"
+  exit 1
+fi
+
+echo "Forbindelse OK. HTTP status: $HEALTH_TEST"
+echo ""
+
 create_agent_task () {
-  AGENT_NUM=$1
-  FILE_PATH=$2
-  
-  # Extract word from Orchestrator JSON format
-  WORD=$(grep -oP '"query":\s*\["\K[^"]+' "$FILE_PATH" | head -1)
-  
+  AGENT_NUM="$1"
+  FILE_PATH="$2"
+
+  WORD=$(grep -oP '"query":\s*\["\K[^"]+' "$FILE_PATH" | head -1 || true)
+
   if [ -z "$WORD" ]; then
-    WORD=$(cat "$FILE_PATH" | sed -n 's/.*"query":\["\([^"]*\)".*/\1/p')
+    WORD=$(sed -n 's/.*"query":\s*\["\([^"]*\)".*/\1/p' "$FILE_PATH" | head -1)
   fi
 
-  # JSON matching your SearchAgentRequest model
-  # Email now uses the unique agent number
+  if [ -z "$WORD" ]; then
+    echo "ERROR|agent${AGENT_NUM}|Kunne ikke finde query word i $FILE_PATH"
+    return 1
+  fi
+
   JSON="{\"Email\":\"agent${AGENT_NUM}@stress.dk\",\"SearchWords\":[\"$WORD\"]}"
 
-  curl -s -X POST "$BASE_URL/api/searchagent" \
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+    -X POST "$BASE_URL/api/searchagent" \
     -H "Content-Type: application/json" \
-    -d "$JSON" > /dev/null
+    -d "$JSON")
+
+  if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "201" ] || [ "$HTTP_STATUS" = "204" ]; then
+    echo "OK|agent${AGENT_NUM}|$WORD|$HTTP_STATUS"
+  else
+    echo "ERROR|agent${AGENT_NUM}|$WORD|HTTP $HTTP_STATUS"
+  fi
 }
 
 export -f create_agent_task
 export BASE_URL
 
-# ----------------------------
-# 1. CREATE 1000 AGENTS
-# ----------------------------
-echo "Creating 1000 agents using 10 iterations of $FILES_COUNT files..."
+echo "Creating $TOTAL_AGENTS agents..."
 START_CREATE=$(date +%s)
 
-# Generate a sequence from 0 to 999
-# We calculate which file to use via modulo: index = agent_num % files_count
-seq 0 999 | xargs -P "$PARALLEL" -I{} bash -c '
-  agent_id=$1
-  files_arr=("$BODIES_DIR"/*.json)
-  num_files=${#files_arr[@]}
-  file_index=$(( agent_id % num_files ))
-  
-  create_agent_task "$((agent_id + 1))" "${files_arr[$file_index]}"
-' _ {}
+TEMP_RESULT_FILE="stress_result_$(date +%s).txt"
+
+for i in $(seq 0 $((TOTAL_AGENTS - 1))); do
+  file_index=$(( i % FILES_COUNT ))
+  echo "$((i + 1))|${FILES[$file_index]}"
+done | xargs -P "$PARALLEL" -I{} bash -c '
+  IFS="|" read -r agent_id file_path <<< "$1"
+  create_agent_task "$agent_id" "$file_path"
+' _ {} | tee "$TEMP_RESULT_FILE"
 
 END_CREATE=$(date +%s)
-echo "Creation took $((END_CREATE - START_CREATE))s"
 
-# ----------------------------
-# 2. VERIFY & RUN
-# ----------------------------
+CREATED_OK=$(grep -c "^OK|" "$TEMP_RESULT_FILE" || true)
+CREATED_ERRORS=$(grep -c "^ERROR|" "$TEMP_RESULT_FILE" || true)
+
 echo ""
-COUNT=$(curl -s "$BASE_URL/api/searchagent" | grep -o '"email"' | wc -l)
+echo "Creation summary:"
+echo "  Created OK: $CREATED_OK"
+echo "  Errors:     $CREATED_ERRORS"
+echo "  Time:       $((END_CREATE - START_CREATE))s"
+
+echo ""
+echo "Verifying agents in system..."
+
+COUNT=$(curl -s "$BASE_URL/api/searchagent" | grep -o '"email"' | wc -l || echo "0")
+
 echo "Total agents in system: $COUNT"
 
+echo ""
 echo "Triggering agent run..."
+
 RUN_START=$(date +%s)
+
 RESULT=$(curl -s -X POST "$BASE_URL/api/searchagent/run")
+
 RUN_END=$(date +%s)
 
 MATCHES=$(echo "$RESULT" | grep -o '"matchFound":true' | wc -l || echo "0")
 
-echo "Results:"
+echo ""
+echo "Run results:"
 echo "  Matches Found: $MATCHES"
 echo "  Run Time:      $((RUN_END - RUN_START))s"
+
+echo ""
 echo "=== Done ==="
+
+rm -f "$TEMP_RESULT_FILE"
