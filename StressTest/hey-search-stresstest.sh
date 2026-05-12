@@ -14,8 +14,8 @@ for f in bodies/*.json; do
   RESULT=$(hey -m POST \
       -H "Content-Type: application/json" \
       -D "$f" \
-      -n 10 \
-      -c 10 \
+      -n 50 \
+      -c 20 \
       -q 20 \
       "$ENDPOINT" 2>&1)
 
