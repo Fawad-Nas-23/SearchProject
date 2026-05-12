@@ -12,6 +12,7 @@ for f in bodies/*.json; do
   WORD=$(cat "$f" | grep -o '"[a-z]*"' | head -1)
   
   RESULT=$(hey -m POST \
+      -disable-keepalive \
       -H "Content-Type: application/json" \
       -D "$f" \
       -n 10 \
