@@ -2,10 +2,12 @@
 @page "/search"
 @using Shared.Model
 @using System.Text.Json
+@using Microsoft.FeatureManagement
 @rendermode InteractiveServer
 @inject HttpClient Http
 @inject IConfiguration Configuration
 @inject ILogger<Search> Logger
+@inject IFeatureManager FeatureManager
 
 <PageTitle>Search</PageTitle>
 
@@ -249,6 +251,21 @@
         25%       { transform: translateX(-5px); }
         75%       { transform: translateX(5px); }
     }
+
+    .feature-disabled-banner {
+        background: rgba(253, 214, 99, 0.1);
+        border: 1px solid rgba(253, 214, 99, 0.3);
+        border-radius: var(--radius-md);
+        padding: 20px;
+        text-align: center;
+        color: var(--warning);
+        margin-top: 20px;
+    }
+
+    .feature-disabled-banner p {
+        margin: 0;
+        font-size: 0.95rem;
+    }
 </style>
 
 <div class="search-page">
@@ -258,14 +275,18 @@
 
     <div class="tabs">
         <button class="tab-btn @(activeTab == "search" ? "active" : "")" @onclick='() => activeTab = "search"'>Search</button>
-        <button class="tab-btn @(activeTab == "agent" ? "active" : "")" @onclick='() => activeTab = "agent"'>Search Agent</button>
+
+        @if (searchAgentEnabled)
+        {
+            <button class="tab-btn @(activeTab == "agent" ? "active" : "")" @onclick='() => activeTab = "agent"'>Search Agent</button>
+        }
     </div>
 
     <div class="search-container">
         @if (activeTab == "search")
         {
             <div class="search-input-wrapper">
-                <input class="search-input" @bind="inputText" @onkeydown="HandleKeyDown" placeholder="What are you looking for?"/>
+                <input class="search-input" @bind="inputText" @onkeydown="HandleKeyDown" placeholder="What are you looking for?" />
                 <button class="search-btn" @onclick="ExecuteSearch">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </button>
@@ -308,7 +329,7 @@
                 }
             }
         }
-        else
+        else if (activeTab == "agent" && searchAgentEnabled)
         {
             <div class="agent-form">
                 <div class="form-group">
@@ -320,6 +341,12 @@
                     <input class="form-input" placeholder="name@domain.com" @bind="agentEmail" />
                 </div>
                 <button class="activate-btn" @onclick="ActivateAgent">Activate Agent</button>
+            </div>
+        }
+        else if (activeTab == "agent" && !searchAgentEnabled)
+        {
+            <div class="feature-disabled-banner">
+                <p>⚠️ Search Agent functionality is currently disabled.</p>
             </div>
         }
     </div>
@@ -355,9 +382,18 @@
     private SearchResult? result = null;
     private string agentKeywords = "";
     private string agentEmail = "";
-
     private bool showPlane = false;
     private string errorMessage = "";
+    private bool searchAgentEnabled = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        searchAgentEnabled = await FeatureManager.IsEnabledAsync("SearchAgent");
+        Logger.LogInformation("Webapp: SearchAgent feature flag is {Status}", searchAgentEnabled ? "enabled" : "disabled");
+
+        if (!searchAgentEnabled && activeTab == "agent")
+            activeTab = "search";
+    }
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
@@ -385,14 +421,14 @@
             };
 
             var response = await Http.PostAsJsonAsync($"{OrchestratorUrl}/api/orchestrator/search", request);
-            
+
             if (response.IsSuccessStatusCode)
             {
                 result = await response.Content.ReadFromJsonAsync<SearchResult>(new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
-                
+
                 int hitCount = result?.DocumentHits?.Count ?? 0;
                 Logger.LogInformation("Webapp: Search returned successfully with {Count} hits.", hitCount);
             }
@@ -413,10 +449,16 @@
 
     private async Task ActivateAgent()
     {
+        if (!searchAgentEnabled)
+        {
+            ShowError("Search Agent functionality is currently disabled.");
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(agentKeywords) || string.IsNullOrWhiteSpace(agentEmail))
         {
             Logger.LogWarning("Webapp: Agent activation failed - empty fields.");
-            ShowError("Udfyld venligst begge felter.");
+            ShowError("Please fill in both fields.");
             return;
         }
 
@@ -445,16 +487,21 @@
                 await Task.Delay(1500);
                 showPlane = false;
             }
+            else if ((int)response.StatusCode == 503)
+            {
+                Logger.LogWarning("Webapp: Search Agent feature is disabled on server side.");
+                ShowError("Search Agent functionality is currently disabled.");
+            }
             else
             {
                 Logger.LogWarning("Webapp: Failed to create agent. Orchestrator status: {Status}", response.StatusCode);
-                ShowError("Kunne ikke oprette agent. Prøv igen senere.");
+                ShowError("Could not create agent. Please try again later.");
             }
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Webapp: Connection error while activating agent for {Email}", agentEmail);
-            ShowError($"Forbindelsesfejl: {ex.Message}");
+            ShowError($"Connection error: {ex.Message}");
         }
     }
 

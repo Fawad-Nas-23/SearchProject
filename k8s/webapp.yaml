@@ -26,6 +26,8 @@ spec:
           env:
             - name: ORCHESTRATOR_URL
               value: "http://orchestrator"
+            - name: FeatureManagement__SearchAgent
+              value: "true"
 
 ---
 apiVersion: v1

@@ -1,4 +1,6 @@
 using WebAppSearch.Components;
+using Microsoft.FeatureManagement;
+
 namespace WebAppSearch
 {
     public class Program
@@ -9,6 +11,8 @@ namespace WebAppSearch
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents();
             builder.Services.AddScoped(sp => new HttpClient());
+            builder.Configuration.AddEnvironmentVariables();
+            builder.Services.AddFeatureManagement();
             var app = builder.Build();
             if (!app.Environment.IsDevelopment())
             {
