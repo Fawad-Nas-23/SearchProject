@@ -27,6 +27,8 @@ spec:
             - name: ORCHESTRATOR_URL
               value: "http://orchestrator"
             - name: FeatureManagement__SearchAgent
+              value: "false"
+            - name: DOTNET_SYSTEM_GLOBALIZATION_INVARIANT
               value: "true"
 
 ---
