@@ -1,5 +1,6 @@
-using OpenTelemetry.Metrics;
+using Microsoft.FeatureManagement;
 using OpenTelemetry.Exporter;
+using OpenTelemetry.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,6 +37,8 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader();
     });
 });
+
+builder.Services.AddFeatureManagement();
 
 var app = builder.Build();
 
