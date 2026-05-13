@@ -32,5 +32,8 @@ public class Config
     public static string DATABASE_TYPE =
         Environment.GetEnvironmentVariable("INDEXER_DATABASE") ?? "";
 
+    public static string FEATURE_SEARCHAGENT_ENABLED =
+        Environment.GetEnvironmentVariable("FEATURE_SEARCHAGENT_ENABLED") ?? "false";
+
 }
 

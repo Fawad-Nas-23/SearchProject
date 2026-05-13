@@ -57,6 +57,13 @@ public class RabbitMQPublisher : IDisposable
 
     public void Publish(IndexingEvent evt)
     {
+        var searchAgentEnabled = Environment.GetEnvironmentVariable("FEATURE_SEARCHAGENT_ENABLED");
+        if (Config.FEATURE_SEARCHAGENT_ENABLED == "false")
+        {
+            _logger.Info("SearchAgent feature disabled. Skipping RabbitMQ publish.");
+            return;
+        }
+
         if (!_isConnected || _channel is null)
         {
             _logger.Warn("Not connected to RabbitMQ - skipping publish");
