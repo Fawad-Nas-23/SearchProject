@@ -1,12 +1,15 @@
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
 using System.Text;
 using System.Text.Json;
-using RabbitMQ.Client;            // Denne mangler sandsynligvis
-using RabbitMQ.Client.Events;     // Denne mangler sandsynligvis
-using RabbitMQ.Client.Exceptions; // God at have til fejlhåndtering
 using SearchAgentService.Services;
 using SearchAgentService.Messaging;
+using Microsoft.FeatureManagement;
+using Shared.Model;
+
+namespace SearchAgentService.Messaging;
+
 public class RabbitMQSubscriber : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
@@ -111,6 +114,15 @@ public class RabbitMQSubscriber : BackgroundService
                 if (indexingEvent?.EventType == "IndexingCompleted")
                 {
                     using var scope = _scopeFactory.CreateScope();
+
+                    var featureManager = scope.ServiceProvider.GetRequiredService<IFeatureManager>();
+                    if (!await featureManager.IsEnabledAsync(FeatureFlags.SearchAgent))
+                    {
+                        _logger.LogWarning("SearchAgent feature is disabled. Skipping agent run triggered by RabbitMQ event.");
+                        _channel.BasicAck(ea.DeliveryTag, false);
+                        return;
+                    }
+
                     var runner = scope.ServiceProvider.GetRequiredService<SearchAgentService.Services.SearchAgentService>();
                     await runner.RunAllAgentsAsync();
                 }

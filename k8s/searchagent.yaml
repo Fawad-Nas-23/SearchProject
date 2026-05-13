@@ -50,6 +50,8 @@ spec:
               value: "1025"
             - name: SMTP_FROM
               value: "searchagent@searchengine.dk"
+            - name: FeatureManagement__SearchAgent
+              value: "true"
 
 ---
 apiVersion: v1

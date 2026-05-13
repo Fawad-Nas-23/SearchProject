@@ -1,6 +1,7 @@
 using SearchAgentService.Repository;
 using SearchAgentService.Services;
 using SearchAgentService.Messaging;
+using Microsoft.FeatureManagement;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,10 @@ builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddScoped<ISearchAgentRepository, SearchAgentPostgresRepository>();
 
 builder.Services.AddHostedService<RabbitMQSubscriber>();
+
+builder.Configuration.AddEnvironmentVariables();
+
+builder.Services.AddFeatureManagement();
 
 var app = builder.Build();
 

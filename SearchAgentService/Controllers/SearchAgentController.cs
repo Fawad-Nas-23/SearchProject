@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using SearchAgentService.Models;
 using SearchAgentService.Services;
 using Shared.Model;
+using Microsoft.FeatureManagement;
 
 namespace SearchAgentService.Controllers;
 
@@ -11,18 +12,27 @@ public class SearchAgentController : ControllerBase
 {
     private readonly ISearchAgentService _service;
     private readonly ILogger<SearchAgentController> _logger;
+    private readonly IFeatureManager _featureManager;
 
     public SearchAgentController(
         ISearchAgentService service,
-        ILogger<SearchAgentController> logger)
+        ILogger<SearchAgentController> logger,
+        IFeatureManager featureManager)
     {
         _service = service;
         _logger = logger;
+        _featureManager = featureManager;
     }
 
     [HttpPost]
-    public ActionResult<SearchAgent> Create(SearchAgentRequest request)
+    public async Task<ActionResult<SearchAgent>> Create(SearchAgentRequest request)
     {
+        if (!await _featureManager.IsEnabledAsync(FeatureFlags.SearchAgent))
+        {
+            _logger.LogWarning("Search agent feature is disabled. Cannot create agent for email: {Email}", request.Email);
+            return StatusCode(503, new { message = "Search agent functionality is currently disabled." });
+        }
+
         try
         {
             var agent = new SearchAgent
@@ -41,14 +51,26 @@ public class SearchAgentController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<List<SearchAgent>> GetAll()
+    public async Task<ActionResult<List<SearchAgent>>> GetAll()
     {
+        if (!await _featureManager.IsEnabledAsync(FeatureFlags.SearchAgent))
+        {
+            _logger.LogWarning("Search agent feature is disabled. Cannot get agents.");
+            return StatusCode(503, new { message = "Search agent functionality is currently disabled." });
+        }
+
         return Ok(_service.GetAll());
     }
 
     [HttpDelete("{email}")]
-    public IActionResult DeleteByEmail(string email)
+    public async Task<IActionResult> DeleteByEmail(string email)
     {
+        if (!await _featureManager.IsEnabledAsync(FeatureFlags.SearchAgent))
+        {
+            _logger.LogWarning("Search agent feature is disabled. Cannot delete agent for email: {Email}", email);
+            return StatusCode(503, new { message = "Search agent functionality is currently disabled." });
+        }
+
         _service.DeleteByEmail(email);
         return Ok($"Deleted search agent(s) for email: {email}");
     }
@@ -56,6 +78,12 @@ public class SearchAgentController : ControllerBase
     [HttpPost("run")]
     public async Task<ActionResult<List<SearchAgentRunResult>>> RunAgents()
     {
+        if (!await _featureManager.IsEnabledAsync(FeatureFlags.SearchAgent))
+        {
+            _logger.LogWarning("Search agent feature is disabled. Cannot run agents.");
+            return StatusCode(503, new { message = "Search agent functionality is currently disabled." });
+        }
+
         try
         {
             var results = await _service.RunAllAgentsAsync();
