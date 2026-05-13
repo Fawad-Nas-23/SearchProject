@@ -34,7 +34,7 @@ spec:
               echo "Postgres is up!"
       containers:
         - name: indexer
-          image: fawad23/indexer:1.1.1
+          image: fawad23/indexer:1.2.1
           env:
             - name: FEATURE_SEARCHAGENT_ENABLED
               value: "true"
