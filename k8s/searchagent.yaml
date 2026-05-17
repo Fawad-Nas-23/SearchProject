@@ -51,9 +51,9 @@ spec:
             - name: SMTP_FROM
               value: "searchagent@searchengine.dk"
             - name: FeatureManagement__SearchAgent
-              value: "false"
+              value: "true"
             - name: DOTNET_SYSTEM_GLOBALIZATION_INVARIANT
-              value: "true"  
+              value: "true"
 
 ---
 apiVersion: v1

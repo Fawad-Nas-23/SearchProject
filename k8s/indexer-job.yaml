@@ -37,7 +37,7 @@ spec:
           image: fawad23/indexer:1.2.1
           env:
             - name: FEATURE_SEARCHAGENT_ENABLED
-              value: "false"
+              value: "true"
             - name: DOTNET_SYSTEM_GLOBALIZATION_INVARIANT
               value: "true"
             - name: INDEXER_DATABASE
