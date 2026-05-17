@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator
+  labels:
+    app: orchestrator
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: orchestrator
+  template:
+    metadata:
+      labels:
+        app: orchestrator
+    spec:
+      containers:
+        - name: orchestrator
+          image: fawad23/orchestrator:1.3.0
+          ports:
+            - name: http-web
+              containerPort: 8080
+          env:
+            - name: SEARCH_API_URL
+              value: "http://search-api"
+            - name: SEARCHAGENT_URL
+              value: "http://searchagent"
+            - name: FeatureManagement__SearchAgent
+              value: "true"
+            - name: DOTNET_SYSTEM_GLOBALIZATION_INVARIANT
+              value: "true"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchestrator
+  labels:
+    app: orchestrator
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "80"
+spec:
+  type: ClusterIP
+  selector:
+    app: orchestrator
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: orchestrator-monitor
+  namespace: monitoring
+  labels:
+    app: orchestrator
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      app: orchestrator
+  endpoints:
+    - interval: 15s
+      port: http

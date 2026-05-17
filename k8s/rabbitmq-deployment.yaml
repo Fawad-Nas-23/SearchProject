@@ -33,15 +33,15 @@ spec:
           readinessProbe:
             exec:
               command: ["rabbitmq-diagnostics", "-q", "ping"]
-            initialDelaySeconds: 20
-            periodSeconds: 10
-            timeoutSeconds: 10
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 20
           livenessProbe:
             exec:
               command: ["rabbitmq-diagnostics", "-q", "status"]
-            initialDelaySeconds: 60
-            periodSeconds: 30
-            timeoutSeconds: 15
+            initialDelaySeconds: 90
+            periodSeconds: 60
+            timeoutSeconds: 30
           resources:
             requests:
               cpu: "100m"

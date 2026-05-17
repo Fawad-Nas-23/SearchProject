@@ -5,6 +5,7 @@ global:
       username: "searcher"
       password: "searcher123"
       database: "SearchDB"
+      
 persistence:
   enabled: true
   size: 2Gi

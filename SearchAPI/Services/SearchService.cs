@@ -3,6 +3,7 @@ using SearchLogic.Repository;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 using SearchLogic.Metrics;
+using System.Diagnostics;
 
 namespace SearchLogic.Services;
 
@@ -12,7 +13,12 @@ public class SearchService : ISearchService
     private readonly ILogger<SearchService> _logger;
     private readonly IDistributedCache _cache;
     private readonly IInstrumentation _instrumentation;
-    public SearchService(IDatabase database, ILogger<SearchService> logger, IDistributedCache cache, Instrumentation instrumentation)
+
+    public SearchService(
+        IDatabase database,
+        ILogger<SearchService> logger,
+        IDistributedCache cache,
+        Instrumentation instrumentation)
     {
         _database = database;
         _logger = logger;
@@ -22,29 +28,38 @@ public class SearchService : ISearchService
 
     public SearchResult Search(string[] query, int maxAmount, bool caseSensitive)
     {
+        var sw = Stopwatch.StartNew();
+
         // --- Cache lookup ---
         var cacheKey = $"{string.Join("_", query)}_{maxAmount}_{caseSensitive}";
         var cached = _cache.GetString(cacheKey);
+
         if (cached != null)
         {
             _logger.LogInformation("Cache HIT | Query: {Query}", string.Join(" ", query));
             _instrumentation.RecordCacheHit();
+
+            sw.Stop();
+            _instrumentation.RecordSearchDuration(sw.Elapsed.TotalSeconds, "hit");
+
             return JsonSerializer.Deserialize<SearchResult>(cached)!;
         }
+
         _logger.LogInformation("Cache MISS | Query: {Query}", string.Join(" ", query));
         _instrumentation.RecordCacheMiss();
 
-        _logger.LogDebug("Search invoked | Query: {Query} | MaxAmount: {MaxAmount} | CaseSensitive: {CaseSensitive}",
+        _logger.LogDebug(
+            "Search invoked | Query: {Query} | MaxAmount: {MaxAmount} | CaseSensitive: {CaseSensitive}",
             string.Join(" ", query), maxAmount, caseSensitive);
 
         List<string> ignored;
-        DateTime start = DateTime.Now;
 
         var wordIds = _database.GetWordIds(query, out ignored, caseSensitive);
 
         if (ignored.Count > 0)
         {
-            _logger.LogWarning("Unknown words ignored | Ignored: {IgnoredWords} | Query: {Query}",
+            _logger.LogWarning(
+                "Unknown words ignored | Ignored: {IgnoredWords} | Query: {Query}",
                 string.Join(", ", ignored), string.Join(" ", query));
         }
 
@@ -52,13 +67,16 @@ public class SearchService : ISearchService
         {
             _logger.LogInformation("No indexed words matched | Query: {Query}", string.Join(" ", query));
 
+            sw.Stop();
+            _instrumentation.RecordSearchDuration(sw.Elapsed.TotalSeconds, "miss");
+
             return new SearchResult
             {
                 Query = query,
                 NoOfHits = 0,
                 DocumentHits = new List<DocumentHit>(),
                 Ignored = ignored,
-                TimeUsed = DateTime.Now - start
+                TimeUsed = sw.Elapsed
             };
         }
 
@@ -86,7 +104,13 @@ public class SearchService : ISearchService
                 var missing = _database.WordsFromIds(_database.GetMissing(doc.mId, wordIds));
                 missing.AddRange(ignored);
 
-                var docHit = new DocumentHit { Document = doc, NoOfHits = docIds[idx++].hits, Missing = missing };
+                var docHit = new DocumentHit
+                {
+                    Document = doc,
+                    NoOfHits = docIds[idx++].hits,
+                    Missing = missing
+                };
+
                 docresult.Add(docHit);
             }
             catch (Exception ex)
@@ -96,7 +120,7 @@ public class SearchService : ISearchService
             }
         }
 
-        var elapsed = DateTime.Now - start;
+        sw.Stop();
 
         var result = new SearchResult
         {
@@ -104,17 +128,26 @@ public class SearchService : ISearchService
             NoOfHits = docIds.Count,
             DocumentHits = docresult,
             Ignored = ignored,
-            TimeUsed = elapsed
+            TimeUsed = sw.Elapsed
         };
 
         // --- Gem i cache i 5 minutter ---
-        _cache.SetString(cacheKey, JsonSerializer.Serialize(result), new DistributedCacheEntryOptions
-        {
-            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-        });
+        _cache.SetString(
+            cacheKey,
+            JsonSerializer.Serialize(result),
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            });
 
-        _logger.LogInformation("Search complete | Query: {Query} | Results: {ResultCount}/{TotalHits} | Time: {TimeMs}ms",
-            string.Join(" ", query), docresult.Count, docIds.Count, elapsed.TotalMilliseconds);
+        _instrumentation.RecordSearchDuration(sw.Elapsed.TotalSeconds, "miss");
+
+        _logger.LogInformation(
+            "Search complete | Query: {Query} | Results: {ResultCount}/{TotalHits} | Time: {TimeMs}ms",
+            string.Join(" ", query),
+            docresult.Count,
+            docIds.Count,
+            sw.Elapsed.TotalMilliseconds);
 
         return result;
     }

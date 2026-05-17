@@ -14,11 +14,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: search-api
+
 spec:
   selector:
     matchLabels:
       app: search-api
-  replicas: 1
+  replicas: 3
   template:
     metadata:
       labels:
@@ -26,12 +27,12 @@ spec:
     spec:
       containers:
         - name: search-api
-          image: fawad23/search-api:1.8.0
+          image: fawad23/search-api:2.5.0
           env:
             - name: INSTANCE
-              value: "A"
-            - name: SQLITE_DB
-              value: "/data/SearchDB-1.db"
+              value: "Primary"
+            - name: POSTGRES_DATABASE
+              value: "Host=searchdb-postgresql.database.svc.cluster.local;Port=5432;Username=postgres;Password=1234;Database=SearchDB"
             - name: RedisConnectionString
               value: "search-redis-master.caching.svc.cluster.local:6379"
             - name: REDIS_PASSWORD

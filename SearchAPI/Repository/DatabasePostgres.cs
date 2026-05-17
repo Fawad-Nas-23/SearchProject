@@ -6,7 +6,7 @@ using Npgsql;
 
 namespace SearchLogic.Repository;
 
-public class DatabasePostgres : IDatabase
+public class DatabasePostgres : IDatabase, IDisposable
 {
     private NpgsqlConnection _connection;
     private Dictionary<string, int> mWords = null;
@@ -227,5 +227,15 @@ public class DatabasePostgres : IDatabase
 
         outIgnored = ignored;
         return res;
+    }
+
+    public void Dispose()
+    {
+        if (_connection != null)
+        {
+            _connection.Close();
+            _connection.Dispose();
+            _logger.LogInformation("PostgreSQL connection closed and returned to pool");
+        }
     }
 }

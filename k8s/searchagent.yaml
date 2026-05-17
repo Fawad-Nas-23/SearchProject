@@ -1,0 +1,95 @@
+#########################################################
+# SearchAgent Configuration
+#########################################################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: searchagent
+  labels:
+    app: searchagent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: searchagent
+  template:
+    metadata:
+      labels:
+        app: searchagent
+    spec:
+      containers:
+        - name: searchagent
+          image: fawad23/searchagent:1.8.0
+          ports:
+            - name: http-web
+              containerPort: 8080
+          env:
+            - name: SEARCHAGENT_DATABASE
+              value: "Host=agentdb-postgresql.database.svc.cluster.local;Port=5432;Username=postgres;Password=1234;Database=AgentDB"
+            - name: SEARCH_API_URL
+              value: "http://search-api"
+            - name: RABBITMQ_HOST
+              value: "rabbitmq"
+            - name: RABBITMQ_PORT
+              value: "5672"
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_DEFAULT_USER
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-secret
+                  key: RABBITMQ_DEFAULT_PASS
+            - name: RABBITMQ_QUEUE
+              value: "indexer.events"
+            - name: SMTP_HOST
+              value: "mailhog"
+            - name: SMTP_PORT
+              value: "1025"
+            - name: SMTP_FROM
+              value: "searchagent@searchengine.dk"
+            - name: FeatureManagement__SearchAgent
+              value: "true"
+            - name: DOTNET_SYSTEM_GLOBALIZATION_INVARIANT
+              value: "true"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: searchagent
+  labels:
+    app: searchagent
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "80"
+spec:
+  type: ClusterIP
+  selector:
+    app: searchagent
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: searchagent-monitor
+  namespace: monitoring
+  labels:
+    app: searchagent
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - default
+  selector:
+    matchLabels:
+      app: searchagent
+  endpoints:
+    - interval: 15s
+      port: http
